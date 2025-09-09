@@ -1,0 +1,94 @@
+/* Estilos para o sistema de prioridades - Theme-aware */
+
+/* CSS Variables for Priority Colors */
+:root {
+  --priority-critical: #dc3545;
+  --priority-high: #fd7e14;
+  --priority-medium: #0d6efd;
+  --priority-low: #198754;
+  --priority-none: #6c757d;
+}
+
+/* Dark theme priority adjustments for better contrast */
+[data-bs-theme="dark"] {
+  --priority-critical: #ff6b7a;
+  --priority-high: #ffa726;
+  --priority-medium: #42a5f5;
+  --priority-low: #66bb6a;
+  --priority-none: #90a4ae;
+}
+
+/* Indicador de prioridade na borda esquerda do card - MAIS GROSSO E VISÍVEL */
+.priority-critical {
+    border-left: 6px solid var(--priority-critical) !important;
+    background: linear-gradient(to right, color-mix(in srgb, var(--priority-critical) 10%, transparent), transparent) !important;
+}
+
+.priority-high {
+    border-left: 6px solid var(--priority-high) !important;
+    background: linear-gradient(to right, color-mix(in srgb, var(--priority-high) 10%, transparent), transparent) !important;
+}
+
+.priority-medium {
+    border-left: 6px solid var(--priority-medium) !important;
+    background: linear-gradient(to right, color-mix(in srgb, var(--priority-medium) 5%, transparent), transparent) !important;
+}
+
+.priority-low {
+    border-left: 6px solid var(--priority-low) !important;
+    background: linear-gradient(to right, color-mix(in srgb, var(--priority-low) 5%, transparent), transparent) !important;
+}
+
+.priority-none {
+    border-left: 6px solid var(--priority-none) !important;
+}
+
+/* Animação suave ao reordenar */
+.card-transition {
+    transition: all 0.3s ease;
+}
+
+/* Destaque ao passar o mouse sobre cards com prioridade - Theme-aware */
+.priority-critical:hover {
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--priority-critical) 40%, transparent);
+    transform: translateY(-2px);
+}
+
+.priority-high:hover {
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--priority-high) 40%, transparent);
+    transform: translateY(-2px);
+}
+
+.priority-medium:hover {
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--priority-medium) 30%, transparent);
+    transform: translateY(-1px);
+}
+
+.priority-low:hover {
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--priority-low) 30%, transparent);
+    transform: translateY(-1px);
+}
+
+/* Badge de prioridade */
+.priority-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Botão de ordenação */
+.sort-priority-btn {
+    transition: all 0.2s ease;
+}
+
+.sort-priority-btn:hover {
+    transform: scale(1.1);
+}
+
+.sort-priority-btn.active {
+    background-color: var(--priority-medium);
+    color: white;
+}

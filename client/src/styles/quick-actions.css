@@ -1,0 +1,102 @@
+/* Estilos para botões de ação rápida mobile */
+
+.quick-action-btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%; /* Botão circular */
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 2px 6px rgba(40, 167, 69, 0.3);
+  position: relative;
+}
+
+/* Melhor visibilidade no mobile e tablet */
+@media (max-width: 992px) {
+  .quick-action-btn {
+    min-width: 44px; /* Tamanho mínimo recomendado para touch */
+    height: 36px;
+    font-size: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .quick-action-btn:active {
+    transform: scale(0.9);
+    box-shadow: 0 3px 8px rgba(40, 167, 69, 0.4);
+  }
+  
+  .quick-action-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.5);
+  }
+  
+  /* Aumentar área de toque */
+  .quick-action-btn::after {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    right: -8px;
+    bottom: -8px;
+    z-index: -1;
+  }
+}
+
+/* Cores específicas dos botões */
+.quick-action-btn.btn-outline-primary {
+  color: #0066CC;
+  border-color: #0066CC;
+}
+
+.quick-action-btn.btn-outline-primary:hover,
+.quick-action-btn.btn-outline-primary:active {
+  background-color: #0066CC;
+  border-color: #0066CC;
+  color: white;
+}
+
+.quick-action-btn.btn-outline-success {
+  color: #10B981;
+  border-color: #10B981;
+}
+
+.quick-action-btn.btn-outline-success:hover,
+.quick-action-btn.btn-outline-success:active {
+  background-color: #10B981;
+  border-color: #10B981;
+  color: white;
+}
+
+/* Animações suaves */
+@keyframes quickPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.quick-action-btn.success-animation {
+  animation: quickPulse 0.3s ease-in-out;
+}
+
+/* Responsividade para diferentes tamanhos de tela */
+@media (max-width: 480px) {
+  .quick-action-btn {
+    min-width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+}
+
+/* Ocultar drag handle no mobile quando há botão de ação */
+@media (max-width: 768px) {
+  .card-has-quick-action .d-none.d-md-block {
+    display: none !important;
+  }
+}

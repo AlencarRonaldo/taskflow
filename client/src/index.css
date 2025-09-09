@@ -1,0 +1,709 @@
+/* Import Inter font for modern typography */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  font-variation-settings: normal;
+  line-height: 1.5;
+  font-weight: 400;
+  
+  font-synthesis: none;
+  text-rendering: optimizeSpeed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* Modern Color Palette - Brand Colors */
+  --primary-blue: #0066CC;
+  --primary-blue-light: #4A9BFF;
+  --primary-blue-dark: #004499;
+  
+  /* Status Colors - Psychology-Driven */
+  --status-todo: #6B7280;
+  --status-progress: #F59E0B;
+  --status-review: #8B5CF6;
+  --status-done: #10B981;
+  
+  /* Semantic Colors */
+  --success: #059669;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --info: #0284C7;
+  
+  /* Neutral Palette */
+  --gray-50: #F9FAFB;
+  --gray-100: #F3F4F6;
+  --gray-200: #E5E7EB;
+  --gray-300: #D1D5DB;
+  --gray-400: #9CA3AF;
+  --gray-500: #6B7280;
+  --gray-600: #4B5563;
+  --gray-700: #374151;
+  --gray-800: #1F2937;
+  --gray-900: #111827;
+  
+  /* Typography Scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  
+  /* Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  
+  /* Spacing Scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Light Theme Variables - WCAG 2.1 AA Compliant */
+[data-bs-theme="light"] {
+  --bs-body-bg: #ffffff;
+  --bs-body-color: #212529;
+  --bs-card-bg: #ffffff;
+  --bs-card-border-color: rgba(0, 0, 0, 0.175);
+  --kanban-board-bg: #f8f9fa;
+  --kanban-column-bg: #e9ecef;
+  --kanban-card-bg: #ffffff;
+  --kanban-card-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  /* Interactive Elements */
+  --btn-outline-border: #6c757d;
+  --btn-outline-color: #495057;
+  --btn-outline-hover-bg: #6c757d;
+  --btn-outline-hover-color: #ffffff;
+  
+  /* Form Controls */
+  --input-bg: #ffffff;
+  --input-border: #ced4da;
+  --input-color: #495057;
+  --input-focus-border: #80bdff;
+  --input-focus-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  
+  /* Modal & Dropdown */
+  --modal-bg: #ffffff;
+  --modal-border: rgba(0, 0, 0, 0.2);
+  --dropdown-bg: #ffffff;
+  --dropdown-border: rgba(0, 0, 0, 0.15);
+  --dropdown-item-hover: #f8f9fa;
+  
+  /* Status & Priority Colors - Enhanced Contrast */
+  --status-todo-bg: #f8f9fa;
+  --status-todo-border: #6c757d;
+  --status-todo-text: #495057;
+  --status-progress-bg: #fff3cd;
+  --status-progress-border: #f59e0b;
+  --status-progress-text: #856404;
+  --status-done-bg: #d1eddb;
+  --status-done-border: #28a745;
+  --status-done-text: #155724;
+  
+  /* Badge Colors */
+  --badge-light: #f8f9fa;
+  --badge-light-text: #495057;
+  --badge-muted: #6c757d;
+  --badge-muted-text: #ffffff;
+}
+
+/* Dark Theme Variables - WCAG 2.1 AA Compliant */
+[data-bs-theme="dark"] {
+  --bs-body-bg: #121212;
+  --bs-body-color: #e9ecef;
+  --bs-card-bg: #1e1e1e;
+  --bs-card-border-color: rgba(255, 255, 255, 0.175);
+  --kanban-board-bg: #181818;
+  --kanban-column-bg: #2d2d2d;
+  --kanban-card-bg: #1e1e1e;
+  --kanban-card-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  
+  /* Interactive Elements */
+  --btn-outline-border: #adb5bd;
+  --btn-outline-color: #adb5bd;
+  --btn-outline-hover-bg: #adb5bd;
+  --btn-outline-hover-color: #212529;
+  
+  /* Form Controls */
+  --input-bg: #2d2d2d;
+  --input-border: #495057;
+  --input-color: #e9ecef;
+  --input-focus-border: #86b7fe;
+  --input-focus-shadow: 0 0 0 0.2rem rgba(134, 183, 254, 0.25);
+  
+  /* Modal & Dropdown */
+  --modal-bg: #1e1e1e;
+  --modal-border: rgba(255, 255, 255, 0.2);
+  --dropdown-bg: #2d2d2d;
+  --dropdown-border: rgba(255, 255, 255, 0.15);
+  --dropdown-item-hover: #3d3d3d;
+  
+  /* Status & Priority Colors - Enhanced Contrast for Dark Mode */
+  --status-todo-bg: #2d2d2d;
+  --status-todo-border: #adb5bd;
+  --status-todo-text: #e9ecef;
+  --status-progress-bg: #3d2e00;
+  --status-progress-border: #ffc107;
+  --status-progress-text: #fff3cd;
+  --status-done-bg: #0f2419;
+  --status-done-border: #28a745;
+  --status-done-text: #d1eddb;
+  
+  /* Badge Colors */
+  --badge-light: #495057;
+  --badge-light-text: #e9ecef;
+  --badge-muted: #6c757d;
+  --badge-muted-text: #ffffff;
+}
+
+a {
+  font-weight: 500;
+  color: #007bff;
+  text-decoration: none;
+}
+a:hover {
+  color: #0056b3;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: flex-start;
+  min-width: 320px;
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+}
+
+#root {
+  width: 100%;
+  padding: 1rem;
+}
+
+h1 {
+  font-size: 2.5em;
+  line-height: 1.1;
+}
+
+/* Enhanced Kanban Card Styles - Compact for many cards */
+.kanban-card, .card {
+  background: var(--kanban-card-bg);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: var(--space-2);
+  margin-bottom: var(--space-2);
+  box-shadow: var(--shadow-sm);
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  width: calc(100% - var(--space-2));
+  max-width: 100%;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  margin-left: var(--space-1);
+  margin-right: var(--space-1);
+}
+
+.kanban-card::before, .card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--status-color, var(--gray-300));
+  transition: width 150ms ease;
+}
+
+.kanban-card:hover::before, .card:hover::before {
+  width: 6px;
+}
+
+/* Card Status Colors - Psychology-Driven */
+.card-status-todo, .kanban-card[data-status="todo"] {
+  --status-color: var(--status-todo);
+  border-left-color: var(--status-todo);
+}
+
+.card-status-in-progress, .kanban-card[data-status="in-progress"] {
+  --status-color: var(--status-progress);
+  border-left-color: var(--status-progress);
+}
+
+.card-status-completed, .kanban-card[data-status="completed"] {
+  --status-color: var(--status-done);
+  border-left-color: var(--status-done);
+}
+
+/* Enhanced Board Styling */
+.board-columns-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: var(--space-8);
+  padding: var(--space-6);
+  background-color: var(--kanban-board-bg);
+  border-radius: var(--radius-lg);
+  min-height: 70vh;
+  align-items: start;
+  overflow-x: auto;
+  width: 100%;
+}
+
+.board-column-wrapper {
+  width: 100%;
+  min-width: 420px;
+  margin-bottom: var(--space-4);
+}
+
+/* Enhanced Kanban Column Styling */
+.kanban-column, .bg-light {
+  background-color: var(--kanban-column-bg) !important;
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  min-height: 500px;
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-sm);
+  transition: all 200ms ease;
+  width: 100%;
+}
+
+.kanban-column:hover, .bg-light:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+
+/* Column Header Styling */
+.kanban-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 2px solid var(--gray-200);
+}
+
+.kanban-column-title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--gray-700);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.kanban-column-count {
+  background: var(--gray-100);
+  color: var(--gray-600);
+  border-radius: var(--radius-md);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  min-width: 20px;
+  text-align: center;
+}
+
+/* Dark theme column styles */
+[data-bs-theme="dark"] .kanban-column,
+[data-bs-theme="dark"] .bg-light {
+  border-color: var(--gray-700);
+}
+
+[data-bs-theme="dark"] .kanban-column-header {
+  border-bottom-color: var(--gray-700);
+}
+
+[data-bs-theme="dark"] .kanban-column-title {
+  color: var(--gray-200);
+}
+
+[data-bs-theme="dark"] .kanban-column-count {
+  background: var(--gray-700);
+  color: var(--gray-300);
+}
+
+/* Enhanced Card Hover Effects and Micro-interactions */
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-blue-light);
+}
+
+.card:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow);
+}
+
+/* Focus states for accessibility */
+.card:focus-visible {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 2px;
+  transform: translateY(-2px);
+}
+
+/* Drag states */
+.card.is-dragging {
+  opacity: 0.8;
+  transform: rotate(2deg);
+  box-shadow: var(--shadow-xl);
+  z-index: 1000;
+}
+
+/* Dark theme hover effects */
+[data-bs-theme="dark"] .card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+[data-bs-theme="dark"] .card {
+  border-color: var(--gray-700);
+}
+
+[data-bs-theme="dark"] .card:hover {
+  border-color: var(--primary-blue-light);
+}
+
+/* Enhanced Modal Theme Support */
+.modal-content {
+  background-color: var(--modal-bg) !important;
+  border-color: var(--modal-border) !important;
+  color: var(--bs-body-color) !important;
+}
+
+.modal-header {
+  border-bottom-color: var(--bs-card-border-color);
+}
+
+.modal-footer {
+  border-top-color: var(--bs-card-border-color);
+}
+
+/* Dropdown Theme Support */
+.dropdown-menu {
+  background-color: var(--dropdown-bg) !important;
+  border-color: var(--dropdown-border) !important;
+  color: var(--bs-body-color) !important;
+}
+
+.dropdown-item {
+  color: var(--bs-body-color) !important;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+  background-color: var(--dropdown-item-hover) !important;
+  color: var(--bs-body-color) !important;
+}
+
+.dropdown-divider {
+  border-top-color: var(--bs-card-border-color);
+}
+
+/* Enhanced Form Controls Theme - Universal */
+.form-control {
+  background-color: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+  color: var(--input-color) !important;
+}
+
+.form-control:focus {
+  background-color: var(--input-bg) !important;
+  border-color: var(--input-focus-border) !important;
+  color: var(--input-color) !important;
+  box-shadow: var(--input-focus-shadow) !important;
+}
+
+/* Dropdown and Select Controls */
+.form-select {
+  background-color: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+  color: var(--input-color) !important;
+}
+
+.form-select:focus {
+  background-color: var(--input-bg) !important;
+  border-color: var(--input-focus-border) !important;
+  box-shadow: var(--input-focus-shadow) !important;
+}
+
+/* Textarea Controls */
+textarea.form-control {
+  background-color: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+  color: var(--input-color) !important;
+}
+
+/* Placeholder text contrast */
+.form-control::placeholder {
+  color: var(--bs-secondary-color);
+  opacity: 0.7;
+}
+
+/* Form labels for better contrast */
+.form-label {
+  color: var(--bs-body-color);
+  font-weight: 500;
+}
+
+/* Enhanced Button Theme Support - Universal */
+.btn-outline-secondary {
+  color: var(--btn-outline-color) !important;
+  border-color: var(--btn-outline-border) !important;
+}
+
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus,
+.btn-outline-secondary:active {
+  background-color: var(--btn-outline-hover-bg) !important;
+  border-color: var(--btn-outline-hover-bg) !important;
+  color: var(--btn-outline-hover-color) !important;
+}
+
+/* Primary buttons - theme aware */
+[data-bs-theme="dark"] .btn-outline-primary {
+  color: #86b7fe;
+  border-color: #86b7fe;
+}
+
+[data-bs-theme="dark"] .btn-outline-primary:hover {
+  background-color: #86b7fe;
+  border-color: #86b7fe;
+  color: #000000;
+}
+
+/* Improved button focus states for accessibility */
+.btn:focus-visible {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 2px;
+  box-shadow: var(--input-focus-shadow);
+}
+
+/* Board Background Styling */
+.text-shadow {
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.board-columns-row {
+  background-color: transparent !important;
+}
+
+.board-column-wrapper .card {
+  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+[data-bs-theme="dark"] .board-column-wrapper .card {
+  background-color: rgba(30, 30, 30, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Glassmorphism effect for modals */
+.modal-content {
+  backdrop-filter: blur(15px);
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-bs-theme="dark"] .modal-content {
+  background-color: rgba(30, 30, 30, 0.95) !important;
+}
+
+/* Force modal to be properly centered */
+.app-modal {
+  z-index: 1050 !important;
+}
+
+.app-modal .modal-dialog {
+  margin: 1.75rem auto !important;
+  max-width: 500px !important;
+  width: 90% !important;
+  max-height: 90vh !important;
+}
+
+.app-modal.show .modal-dialog {
+  transform: none !important;
+}
+
+.app-modal .modal-content {
+  max-height: auto !important;
+  overflow-y: auto !important;
+}
+
+.modal-backdrop.show {
+  opacity: 0.5 !important;
+  z-index: 1040 !important;
+}
+
+/* Ensure modal works with any viewport or mouse position */
+.app-modal .modal-dialog {
+  position: relative !important;
+  pointer-events: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  min-height: auto !important;
+}
+
+.app-modal .modal-content {
+  width: 100% !important;
+  pointer-events: auto !important;
+  background-clip: padding-box !important;
+}
+
+/* Fix any potential transform issues */
+.app-modal.fade .modal-dialog {
+  transition: transform 0.3s ease-out !important;
+  transform: translate(0, -50px) !important;
+}
+
+.app-modal.show .modal-dialog {
+  transform: none !important;
+}
+
+/* Enhanced Mobile and Tablet Responsiveness */
+@media (max-width: 1200px) {
+  .board-columns-row {
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: var(--space-6);
+  }
+  
+  .board-column-wrapper {
+    min-width: 380px;
+  }
+}
+
+@media (max-width: 768px) {
+  .board-columns-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+    padding: var(--space-4);
+  }
+  
+  .board-column-wrapper {
+    width: 100%;
+    min-width: unset;
+  }
+  
+  .kanban-column, .bg-light {
+    padding: var(--space-3);
+    min-height: 300px;
+  }
+  
+  .card, .kanban-card {
+    padding: var(--space-2);
+    margin-bottom: var(--space-1);
+    font-size: var(--text-xs);
+  }
+  
+  /* Touch-friendly interactions */
+  .card, .btn {
+    min-height: 44px;
+  }
+  
+  .kanban-column-title {
+    font-size: var(--text-base);
+  }
+  
+  /* Improved tap targets */
+  .card:hover {
+    transform: none; /* Disable hover animations on mobile */
+  }
+  
+  .card:active {
+    transform: scale(0.98);
+    transition: transform 100ms ease;
+  }
+  
+  /* Mobile-specific spacing */
+  #root {
+    padding: var(--space-2);
+  }
+  
+  h1 {
+    font-size: var(--text-2xl);
+  }
+}
+
+@media (max-width: 480px) {
+  .board-columns-row {
+    padding: var(--space-2);
+    gap: var(--space-2);
+  }
+  
+  .kanban-column, .bg-light {
+    padding: var(--space-2);
+  }
+  
+  .card, .kanban-card {
+    padding: var(--space-1);
+    font-size: var(--text-xs);
+    line-height: 1.3;
+  }
+  
+  .kanban-column-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .card, .kanban-card {
+    border: 2px solid currentColor;
+  }
+  
+  .kanban-column, .bg-light {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  .card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .board-columns-row {
+    display: block;
+  }
+  
+  .kanban-column, .bg-light {
+    break-inside: avoid;
+    margin-bottom: var(--space-4);
+  }
+}

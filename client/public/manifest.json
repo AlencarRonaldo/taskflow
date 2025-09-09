@@ -1,0 +1,95 @@
+{
+  "name": "TaskFlow Pro",
+  "short_name": "TaskFlow",
+  "description": "Sistema profissional de gerenciamento de tarefas com Kanban, Timeline e Analytics",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#6366f1",
+  "background_color": "#ffffff",
+  "categories": ["productivity", "business", "utilities"],
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable any"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Novo Quadro",
+      "short_name": "Novo",
+      "description": "Criar um novo quadro Kanban",
+      "url": "/"
+    },
+    {
+      "name": "Timeline",
+      "short_name": "Timeline",
+      "description": "Ver timeline dos projetos",
+      "url": "/timeline"
+    },
+    {
+      "name": "Calendário",
+      "short_name": "Calendário",
+      "description": "Vista de calendário",
+      "url": "/calendar"
+    },
+    {
+      "name": "Grid",
+      "short_name": "Grid",
+      "description": "Vista em grade dos dados",
+      "url": "/grid"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "scope": "/",
+  "id": "/",
+  "dir": "ltr",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui",
+    "browser"
+  ],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "file_handlers": [
+    {
+      "action": "/import",
+      "accept": {
+        "text/csv": [".csv"],
+        "application/json": [".json"]
+      }
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+taskflow",
+      "url": "/handle?protocol=%s"
+    }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "files",
+          "accept": ["text/plain", "image/*"]
+        }
+      ]
+    }
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
+}

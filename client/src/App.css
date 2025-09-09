@@ -1,0 +1,159 @@
+.dashboard-container {
+  margin-top: 0.5rem; /* Adjusted to 0.5rem to bring content down slightly */
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.board-columns-row {
+  gap: 1rem; /* Space between columns */
+}
+
+.board-column-wrapper {
+  background-color: var(--kanban-column-bg); /* Theme-aware background for columns */
+  border-radius: 0.5rem; /* Rounded corners for columns */
+  padding: 1rem; /* Padding inside columns */
+  box-shadow: var(--shadow-sm); /* Theme-aware shadow for columns */
+}
+
+/* Styling for the Card component within a column */
+.board-column-wrapper .card {
+  background-color: var(--kanban-card-bg); /* Theme-aware background for task cards */
+  border: 1px solid var(--bs-card-border-color); /* Theme-aware border */
+  margin-bottom: 0.75rem; /* Space between task cards */
+  padding: 1rem; /* Internal padding for task cards */
+  box-shadow: var(--kanban-card-shadow); /* Theme-aware shadow for task cards */
+  transition: transform 0.2s ease-in-out; /* Smooth hover effect */
+}
+
+.board-column-wrapper .card:hover {
+  transform: translateY(-2px); /* Lift effect on hover */
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1); /* More pronounced shadow on hover */
+}
+
+/* Styling for the drag handle within a card */
+.board-column-wrapper .card .bi-grip-vertical {
+  color: var(--bs-secondary-color); /* Theme-aware muted color for grip icon */
+}
+
+/* Status indicators for cards - Use theme-aware variables */
+.card-status-todo {
+  border-left: 4px solid var(--status-todo-border); /* Theme-aware Blue for To Do */
+  background: var(--status-todo-bg);
+}
+
+.card-status-in-progress {
+  border-left: 4px solid var(--status-progress-border); /* Theme-aware Yellow for In Progress */
+  background: var(--status-progress-bg);
+}
+
+.card-status-completed {
+  border-left: 4px solid var(--status-done-border); /* Theme-aware Green for Completed */
+  background: var(--status-done-bg);
+}
+
+.board-list {
+  margin-top: 1rem; /* Space above the list */
+}
+
+.board-list-item {
+  margin-bottom: 0.75rem; /* Space between items */
+  border-radius: 0.5rem; /* Rounded corners for list items */
+  box-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.05); /* Even subtler shadow */
+  transition: transform 0.2s ease-in-out; /* Smooth hover effect */
+}
+
+.board-list-item:hover {
+  transform: translateY(-3px); /* Lift effect on hover */
+  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1); /* More pronounced shadow on hover */
+}
+
+/* Adjustments for Badge within list item */
+.board-list-item .badge {
+  font-size: 0.8em;
+  padding: 0.4em 0.6em;
+  border-radius: 0.25rem;
+}
+
+/* Modal Styling */
+.app-modal .modal-content {
+  border-radius: 0.5rem; /* Rounded corners for modal */
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15); /* More pronounced shadow */
+}
+
+.app-modal .modal-header {
+  border-bottom: 1px solid var(--bs-card-border-color); /* Theme-aware border for header */
+  padding: 1rem 1.5rem; /* Consistent padding */
+}
+
+.app-modal .modal-title {
+  font-weight: 600;
+  color: var(--bs-body-color); /* Theme-aware text color */
+}
+
+.app-modal .modal-body {
+  padding: 1.5rem; /* Consistent padding */
+}
+
+.app-modal .modal-footer {
+  border-top: 1px solid var(--bs-card-border-color); /* Theme-aware border for footer */
+  padding: 1rem 1.5rem; /* Consistent padding */
+}
+
+/* Espaçamento adicional para cards nas seções Futuros e Concluídos */
+.spaced-cards .board-list-item {
+  margin-bottom: 4.5rem; /* Espaçamento GIGANTE entre cada card individual */
+  padding: 2.5rem; /* Padding interno ainda mais generoso */
+  border-radius: 1rem; /* Bordas ainda mais arredondadas */
+}
+
+.spaced-cards .board-list-item:hover {
+  transform: translateY(-5px); /* Efeito hover mais pronunciado */
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15); /* Sombra ainda mais acentuada */
+}
+
+/* Espaçamento interno melhorado para o conteúdo dos cards */
+.spaced-cards .board-list-item .flex-grow-1 {
+  padding: 1rem 0; /* Padding vertical ainda maior para o conteúdo */
+}
+
+/* Espaçamento entre botões nos cards com spacing */
+.spaced-cards .board-list-item .btn-group .btn {
+  margin-left: 0.75rem; /* Maior espaçamento entre botões */
+}
+
+/* Espaçamento adicional entre seções Futuros e Concluídos */
+.spaced-cards {
+  margin-top: 2rem; /* Espaçamento adicional acima da seção */
+  margin-bottom: 2rem; /* Espaçamento adicional abaixo da seção */
+}
+
+/* Remove o último margin-bottom do último card para evitar espaço excessivo */
+.spaced-cards .board-list-item:last-child {
+  margin-bottom: 2rem; /* Espaçamento do último card otimizado */
+}

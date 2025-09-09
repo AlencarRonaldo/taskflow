@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Calendário</title>
+</head>
+<body>
+    <h1>Teste do Calendário</h1>
+    <button onclick="loginAndTestCalendar()">Fazer Login e Testar Calendário</button>
+    <div id="result"></div>
+
+    <script>
+        async function loginAndTestCalendar() {
+            try {
+                // 1. Fazer login
+                const loginResponse = await fetch('http://localhost:3001/api/users/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'ronaldoalencar2009@hotmail.com',
+                        password: 'Isa@0709'
+                    })
+                });
+
+                const loginData = await loginResponse.json();
+                console.log('Login response:', loginData);
+
+                if (loginData.data && loginData.data.token) {
+                    // 2. Testar API do calendário
+                    const calendarResponse = await fetch('http://localhost:3001/api/calendar/events', {
+                        headers: {
+                            'Authorization': `Bearer ${loginData.data.token}`
+                        }
+                    });
+
+                    const calendarData = await calendarResponse.json();
+                    console.log('Calendar response:', calendarData);
+
+                    document.getElementById('result').innerHTML = 
+                        `<h3>✅ Login realizado com sucesso!</h3>
+                         <p><strong>Token:</strong> ${loginData.data.token.substring(0, 50)}...</p>
+                         <p><strong>Eventos encontrados:</strong> ${calendarData.data ? calendarData.data.length : 0}</p>
+                         <pre>${JSON.stringify(calendarData, null, 2)}</pre>`;
+                } else {
+                    document.getElementById('result').innerHTML = 
+                        `<h3>❌ Erro no login</h3>
+                         <pre>${JSON.stringify(loginData, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    `<h3>❌ Erro na requisição</h3>
+                     <p>${error.message}</p>`;
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
