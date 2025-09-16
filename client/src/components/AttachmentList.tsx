@@ -66,7 +66,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
 
   const handleDownload = (attachment: Attachment) => {
     const link = document.createElement('a');
-    link.href = `http://localhost:8000${attachment.url}`;
+    link.href = `http://localhost:8001${attachment.url}`;
     link.download = attachment.original_name;
     link.target = '_blank';
     document.body.appendChild(link);

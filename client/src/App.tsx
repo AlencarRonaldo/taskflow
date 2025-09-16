@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react
 import { Container, Nav, Navbar, Button } from 'react-bootstrap';
 import { useState } from 'react';
 import { useAuth } from './context/AuthContext';
+import { ProjectProvider } from './context/ProjectContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ThemeToggle } from './components/ThemeToggle';
 import { GlobalSearch } from './components/GlobalSearch';
@@ -13,6 +14,9 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import BoardPage from './pages/BoardPage';
 import PublicBoardPage from './pages/PublicBoardPage';
+import ProjectsPage from './pages/ProjectsPage';
+import ProjectDashboard from './pages/ProjectDashboard';
+import ProjectSwitcher from './components/ProjectSwitcher';
 import CalendarView from './components/CalendarView';
 import TimelineView from './components/TimelineView';
 import GridView from './components/GridView';
@@ -40,14 +44,17 @@ const AuthNav = () => {
         <>
             <Nav className="ms-auto d-flex align-items-center gap-2">
                 {isAuthenticated && (
-                    <Button 
-                        variant="outline-light" 
-                        size="sm"
-                        onClick={() => setShowSearch(true)}
-                        title="Busca Global (Ctrl+K)"
-                    >
-                        🔍 Buscar
-                    </Button>
+                    <>
+                        <ProjectSwitcher />
+                        <Button 
+                            variant="outline-light" 
+                            size="sm"
+                            onClick={() => setShowSearch(true)}
+                            title="Busca Global (Ctrl+K)"
+                        >
+                            🔍 Buscar
+                        </Button>
+                    </>
                 )}
                 <ThemeToggle />
                 {isAuthenticated ? (
@@ -86,7 +93,7 @@ function App() {
             <>
               <Navbar bg="dark" variant="dark" expand="lg" fixed="top">
                 <Container fluid>
-                  <Navbar.Brand as={Link} to="/">⚡ TaskFlow Pro</Navbar.Brand>
+                  <Navbar.Brand as={Link} to="/projects">⚡ TaskFlow Pro</Navbar.Brand>
                   <AuthNav />
                 </Container>
               </Navbar>
@@ -94,6 +101,21 @@ function App() {
                 <Routes>
                   <Route path="/" element={<PrivateRoute />}>
                     <Route path="/" element={<Dashboard />} />
+                    <Route path="/projects" element={<ProjectsPage />} />
+                    <Route path="/projects/:projectId/*" element={
+                      <ProjectProvider>
+                        <Routes>
+                          <Route path="/" element={<ProjectDashboard />} />
+                          <Route path="/boards" element={<Dashboard />} />
+                          <Route path="/boards/:id" element={<BoardPage />} />
+                          <Route path="/calendar" element={<CalendarView />} />
+                          <Route path="/timeline" element={<TimelineView />} />
+                          <Route path="/grid" element={<GridView />} />
+                        </Routes>
+                      </ProjectProvider>
+                    } />
+                    
+                    {/* Legacy routes (will redirect to projects) */}
                     <Route path="/calendar" element={<CalendarView />} />
                     <Route path="/timeline" element={<TimelineView />} />
                     <Route path="/grid" element={<GridView />} />

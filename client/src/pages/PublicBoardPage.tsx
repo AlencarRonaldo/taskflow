@@ -203,7 +203,7 @@ const PublicBoardPage: React.FC = () => {
     setError(null);
     
     try {
-      const response = await fetch(`http://localhost:8000/api/public/${token}`);
+      const response = await fetch(`http://localhost:8001/api/public/${token}`);
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -246,7 +246,7 @@ const PublicBoardPage: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch(`http://localhost:8000/api/public/${token}/register`, {
+      const response = await fetch(`http://localhost:8001/api/public/${token}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -310,7 +310,7 @@ const PublicBoardPage: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch(`http://localhost:8000/api/public/${token}/cards/${selectedCard.id}/comment`, {
+      const response = await fetch(`http://localhost:8001/api/public/${token}/cards/${selectedCard.id}/comment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -394,7 +394,7 @@ const PublicBoardPage: React.FC = () => {
 
         // Send to backend
         try {
-          const response = await fetch(`http://localhost:8000/api/public/${token}/cards/${card.id}/move`, {
+          const response = await fetch(`http://localhost:8001/api/public/${token}/cards/${card.id}/move`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',

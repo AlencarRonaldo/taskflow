@@ -67,6 +67,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }, [user]);
 
     const login = (newToken: string, newUser: { id: number; email: string }) => {
+        const cleanToken = newToken.replace(/"/g, '');
+        api.defaults.headers.common['Authorization'] = `Bearer ${cleanToken}`;
+        axios.defaults.headers.common['Authorization'] = `Bearer ${cleanToken}`;
         setToken(newToken);
         setUser(newUser);
     };

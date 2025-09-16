@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Container, Row, Col, Button, Alert, Form, Modal, Badge } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -27,6 +27,7 @@ interface CalendarEvent {
 }
 
 const CalendarView = () => {
+    const { projectId } = useParams<{ projectId?: string }>();
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [filteredEvents, setFilteredEvents] = useState<CalendarEvent[]>([]);
     const [originalEvents, setOriginalEvents] = useState<any[]>([]); // Store original API data for filtering
@@ -214,7 +215,8 @@ const CalendarView = () => {
     };
 
     const goToBoard = (boardId: number) => {
-        navigate(`/boards/${boardId}`);
+        const path = projectId ? `/projects/${projectId}/boards/${boardId}` : `/boards/${boardId}`;
+        navigate(path);
         setShowEventModal(false);
     };
 
@@ -381,12 +383,6 @@ const CalendarView = () => {
                                     hour: '2-digit',
                                     minute: '2-digit',
                                     meridiem: false
-                                }}
-                                eventDidMount={(info) => {
-                                    console.log('🎯 FullCalendar event mounted:', info.event.title, info.event.start);
-                                }}
-                                eventWillUnmount={(info) => {
-                                    console.log('🎯 FullCalendar event unmounting:', info.event.title);
                                 }}
                             />
                         )}

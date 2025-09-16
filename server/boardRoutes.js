@@ -9,103 +9,43 @@ const automationWorker = require('./automationWorker');
 router.get('/boards', verifyToken, async (req, res) => {
     try {
         const userId = req.user.id;
-        console.log('Fetching boards for user:', userId);
+        const projectId = req.query.project_id;
+
+        let query = `
+            SELECT b.id, b.title, b.user_id_creator, b.due_date, b.created_at, b.responsible,
+                   b.last_updated_by, b.last_updated_at, b.project_id,
+                   u.name as last_updated_user_name,
+                   u.email as last_updated_user_email
+            FROM boards b
+            LEFT JOIN users u ON b.last_updated_by = u.id
+            WHERE b.user_id_creator = ?`;
         
-        // Simple fallback approach - try different queries until one works
-        let boards = [];
-        
-        try {
-            // Try the full query first with last updated user info
-            boards = await all(`
-                SELECT b.id, b.title, b.user_id_creator, b.due_date, b.created_at, b.responsible,
-                       b.last_updated_by, b.last_updated_at, 
-                       u.name as last_updated_user_name,
-                       u.email as last_updated_user_email
-                FROM boards b
-                LEFT JOIN users u ON b.last_updated_by = u.id
-                WHERE b.user_id_creator = ? 
-                ORDER BY b.id DESC
-            `, [userId]);
-            console.log('Full query succeeded, found boards:', boards.length);
-        } catch (fullQueryError) {
-            console.log('Full query failed:', fullQueryError.message);
+        const params = [userId];
+        if (projectId) {
+            query += ` AND b.project_id = ?`;
+            params.push(projectId);
+        }
+        // Removido ORDER BY para permitir ordenação no frontend
+
+        let boards = await all(query, params);
+
+        // Recalculate completion status for each board on the fly
+        for (let board of boards) {
+            const cards = await all('SELECT status FROM cards WHERE column_id IN (SELECT id FROM columns WHERE board_id = ?)', [board.id]);
+            const allCompleted = cards.length > 0 && cards.every(card => card.status === 'completed');
             
-            try {
-                // Try basic query with user info
-                boards = await all(`
-                    SELECT b.id, b.title, b.user_id_creator, b.responsible,
-                           b.last_updated_by, b.last_updated_at, 
-                           u.name as last_updated_user_name,
-                           u.email as last_updated_user_email
-                    FROM boards b
-                    LEFT JOIN users u ON b.last_updated_by = u.id
-                    WHERE b.user_id_creator = ? 
-                    ORDER BY b.id DESC
-                `, [userId]);
-                console.log('Basic query succeeded, found boards:', boards.length);
-                
-                // Add null values for missing fields
-                boards.forEach(board => {
-                    board.due_date = null;
-                    board.created_at = null;
-                });
-            } catch (basicQueryError) {
-                console.log('Basic query also failed:', basicQueryError.message);
-                
-                // Last resort - minimal query
-                boards = await all('SELECT id, title, responsible FROM boards WHERE user_id_creator = ? ORDER BY id DESC', [userId]);
-                console.log('Minimal query succeeded, found boards:', boards.length);
-                
-                boards.forEach(board => {
-                    board.user_id_creator = userId;
-                    board.due_date = null;
-                    board.created_at = null;
-                    board.responsible = board.responsible || null;
-                    board.last_updated_by = null;
-                    board.last_updated_at = null;
-                    board.last_updated_user_name = null;
-                    board.last_updated_user_email = null;
-                });
-            }
-        }
-        
-        // Add missing columns that frontend expects
-        boards.forEach(board => {
-            board.background_image = null;
-            board.background_color = null;
-            board.allTasksCompleted = false; // Default value
-        });
+            // Update the board object for the response
+            board.allTasksCompleted = allCompleted;
 
-        // Try to get completion status, but don't fail if it doesn't work
-        try {
-            for (let board of boards) {
-                const columns = await all('SELECT id FROM columns WHERE board_id = ?', [board.id]);
-                let allCards = [];
-                for (let column of columns) {
-                    const cards = await all('SELECT status FROM cards WHERE column_id = ?', [column.id]);
-                    allCards = allCards.concat(cards);
-                }
-
-                // Check if all cards are completed
-                const allTasksCompleted = allCards.length > 0 && allCards.every(card => card.status === 'completed');
-                board.allTasksCompleted = allTasksCompleted;
-            }
-        } catch (statusError) {
-            console.log('Could not get task status:', statusError.message);
-            // Keep default false value for allTasksCompleted
+            // Update the database to correct any stale data
+            await run('UPDATE boards SET allTasksCompleted = ? WHERE id = ?', [allCompleted ? 1 : 0, board.id]);
         }
 
-        console.log('Returning boards with last_updated info:', boards.map(b => ({ 
-            id: b.id, 
-            title: b.title, 
-            last_updated_user_email: b.last_updated_user_email,
-            last_updated_at: b.last_updated_at 
-        })));
         res.json({ message: 'success', data: boards });
+
     } catch (err) {
         console.error('Critical error in /boards endpoint:', err);
-        // Return empty array instead of error to prevent frontend crashes
-        res.json({ message: 'success', data: [] });
+        res.status(500).json({ message: 'error', error: err.message });
     }
 });
 
@@ -192,7 +132,25 @@ router.get('/boards/:id', verifyToken, async (req, res) => {
             }
         }
 
-        res.json({ message: 'success', data: { ...board, columns } });
+        // Calculate if all tasks are completed
+        let allTasksCompleted = false;
+        try {
+            let allCards = [];
+            for (let column of columns) {
+                if (column.cards) {
+                    allCards = allCards.concat(column.cards);
+                }
+            }
+            allTasksCompleted = allCards.length > 0 && allCards.every(card => card.status === 'completed');
+            
+            // Update the board with the correct status to prevent stale data
+            await run('UPDATE boards SET allTasksCompleted = ? WHERE id = ?', [allTasksCompleted ? 1 : 0, boardId]);
+
+        } catch (statusError) {
+            console.log('Could not calculate completion status:', statusError.message);
+        }
+
+        res.json({ message: 'success', data: { ...board, columns, allTasksCompleted } });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -201,16 +159,56 @@ router.get('/boards/:id', verifyToken, async (req, res) => {
 // Create a new board
 router.post('/boards', verifyToken, async (req, res) => {
     try {
-        const { title, due_date, responsible } = req.body;
+        const { title, due_date, responsible, project_id, description, background_color } = req.body;
         const userId = req.user.id;
+        
         if (!title) {
             return res.status(400).json({ error: 'Board title is required' });
         }
         if (!responsible) {
             return res.status(400).json({ error: 'Board responsible is required' });
         }
-        const result = await run('INSERT INTO boards (title, user_id_creator, due_date, responsible, last_updated_by, last_updated_at) VALUES (?, ?, ?, ?, ?, datetime("now"))', [title, userId, due_date || null, responsible, userId]);
-        res.status(201).json({ message: 'success', data: { id: result.id, title, user_id_creator: userId, due_date: due_date || null, responsible } });
+        
+        // Se project_id fornecido, verificar se existe e se o usuário tem acesso
+        if (project_id) {
+            const project = await get('SELECT id FROM projects WHERE id = ? AND (owner_id = ? OR id IN (SELECT project_id FROM project_members WHERE user_id = ?))', 
+                [project_id, userId, userId]);
+            if (!project) {
+                return res.status(404).json({ error: 'Project not found or access denied' });
+            }
+        }
+        
+        const result = await run(
+            'INSERT INTO boards (title, user_id_creator, due_date, responsible, project_id, description, background_color, last_updated_by, last_updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))', 
+            [title, userId, due_date || null, responsible, project_id || null, description || null, background_color || '#f8f9fa', userId]
+        );
+        
+        const boardId = result.id;
+        console.log(`📋 Board "${title}" criado com ID ${boardId}, criando estrutura padrão...`);
+        
+        // Criar estrutura padrão do board (colunas e cards de exemplo)
+        const createBoardStructure = require('./createBoardStructure');
+        try {
+            await createBoardStructure(boardId, userId);
+            console.log(`✅ Estrutura padrão criada para board ${boardId}`);
+        } catch (structureError) {
+            console.error(`❌ Erro ao criar estrutura do board ${boardId}:`, structureError);
+            // Não falhar a criação do board se houver erro na estrutura
+        }
+        
+        res.status(201).json({ 
+            message: 'success', 
+            data: { 
+                id: boardId, 
+                title, 
+                user_id_creator: userId, 
+                due_date: due_date || null, 
+                responsible,
+                project_id: project_id || null,
+                description: description || null,
+                background_color: background_color || '#f8f9fa'
+            } 
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -394,6 +392,53 @@ const checkSchedulingConflict = async (due_date, assignee_id, excludeCardId = nu
     
     const conflicts = await all(query, params);
     return conflicts.length > 0 ? conflicts : null;
+};
+
+// Update board completion status
+const updateBoardCompletionStatus = async (boardId) => {
+    try {
+        // Get all cards from all columns of the board
+        let allCards = [];
+        const columns = await all('SELECT id FROM columns WHERE board_id = ?', [boardId]);
+        
+        for (let column of columns) {
+            const cards = await all('SELECT status FROM cards WHERE column_id = ?', [column.id]);
+            allCards = allCards.concat(cards);
+        }
+
+        // Check if all cards are completed
+        // A card is considered completed if:
+        // 1. It has status 'completed', OR
+        // 2. It's in a column with title containing 'concluído' or 'completed'
+        let allTasksCompleted = false;
+        if (allCards.length > 0) {
+            allTasksCompleted = true;
+            for (let card of allCards) {
+                if (card.status === 'completed') continue;
+                
+                // Check if card is in a "completed" column
+                const column = await get('SELECT title FROM columns WHERE id = ?', [card.column_id]);
+                if (column && column.title) {
+                    const columnTitle = column.title.toLowerCase();
+                    if (columnTitle.includes('concluído') || columnTitle.includes('completed')) {
+                        continue;
+                    }
+                }
+                
+                allTasksCompleted = false;
+                break;
+            }
+        }
+        
+        // Update the board with completion status
+        await run('UPDATE boards SET allTasksCompleted = ? WHERE id = ?', [allTasksCompleted ? 1 : 0, boardId]);
+        
+        console.log(`📋 Board ${boardId} completion status updated: ${allTasksCompleted}`);
+        return allTasksCompleted;
+    } catch (error) {
+        console.error('Error updating board completion status:', error);
+        throw error;
+    }
 };
 
 // Create a new card
@@ -593,6 +638,15 @@ router.put('/cards/:id', verifyToken, async (req, res) => {
                 automationWorker.onCardCompleted(newCard, boardId).catch(err => {
                     console.error('Error triggering card completed automation:', err);
                 });
+            }
+        }
+        
+        // Update board completion status if status or column_id was changed
+        if ((status !== undefined || column_id !== undefined) && boardId) {
+            try {
+                await updateBoardCompletionStatus(boardId);
+            } catch (completionError) {
+                console.log('Error updating board completion status:', completionError.message);
             }
         }
         

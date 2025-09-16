@@ -217,6 +217,15 @@ const db = new sqlite3.Database(DBSOURCE, (err) => {
                 }
             });
 
+            // Add allTasksCompleted column to boards table
+            db.run(`ALTER TABLE boards ADD COLUMN allTasksCompleted INTEGER DEFAULT 0`, (err) => {
+                if (err && !err.message.includes('duplicate column')) {
+                    console.error('Error adding allTasksCompleted column to boards:', err.message);
+                } else if (!err) {
+                    console.log('Added allTasksCompleted column to boards table');
+                }
+            });
+
             // Add created_at and updated_at columns to cards table
             db.run(`ALTER TABLE cards ADD COLUMN created_at DATETIME`, (err) => {
                 if (err && !err.message.includes('duplicate column')) {
@@ -428,6 +437,54 @@ const db = new sqlite3.Database(DBSOURCE, (err) => {
                     console.error('Error creating card_templates table:', err.message);
                 } else {
                     console.log('card_templates table created or already exists');
+                }
+            });
+
+            // Create projects table
+            db.run(`CREATE TABLE IF NOT EXISTS projects (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                description TEXT,
+                owner_id INTEGER NOT NULL,
+                slug TEXT UNIQUE NOT NULL,
+                color TEXT DEFAULT '#007bff',
+                logo TEXT,
+                is_active BOOLEAN DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (owner_id) REFERENCES users (id)
+            )`, (err) => {
+                if (err) {
+                    console.error('Error creating projects table:', err.message);
+                } else {
+                    console.log('projects table created or already exists');
+                }
+            });
+
+            // Create project_members table
+            db.run(`CREATE TABLE IF NOT EXISTS project_members (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                project_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                role TEXT NOT NULL DEFAULT 'member',
+                joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+                UNIQUE(project_id, user_id)
+            )`, (err) => {
+                if (err) {
+                    console.error('Error creating project_members table:', err.message);
+                } else {
+                    console.log('project_members table created or already exists');
+                }
+            });
+
+            // Add project_id column to boards table
+            db.run(`ALTER TABLE boards ADD COLUMN project_id INTEGER`, (err) => {
+                if (err && !err.message.includes('duplicate column')) {
+                    console.error('Error adding project_id column to boards:', err.message);
+                } else if (!err) {
+                    console.log('Added project_id column to boards table');
                 }
             });
 

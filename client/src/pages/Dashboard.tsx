@@ -15,6 +15,7 @@ interface Board {
     last_updated_at?: string;
     last_updated_user_name?: string;
     last_updated_user_email?: string;
+    project_id?: number;
 }
 
 const Dashboard = () => {
@@ -110,42 +111,33 @@ const Dashboard = () => {
     };
 
     const groupBoardsByDate = (boards: Board[]) => {
-        const groups = {
-            overdue: boards
-                .filter(board => isOverdue(board.due_date) && !board.allTasksCompleted)
-                .sort((a, b) => {
-                    // Ordenar por data de vencimento (mais atrasado primeiro)
-                    if (!a.due_date || !b.due_date) return 0;
+        const emAtendimento = boards
+            .filter(board => !board.allTasksCompleted)
+            .sort((a, b) => {
+                // Primeiro: boards com data de vencimento (ordem crescente)
+                if (a.due_date && b.due_date) {
                     return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-                }),
-            today: boards
-                .filter(board => isToday(board.due_date) && !board.allTasksCompleted)
-                .sort((a, b) => {
-                    // Ordenar por horário (mais cedo primeiro)
-                    if (!a.due_date || !b.due_date) return 0;
-                    return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-                }),
-            thisWeek: boards
-                .filter(board => isThisWeek(board.due_date) && !board.allTasksCompleted)
-                .sort((a, b) => {
-                    // Ordenar por data de vencimento (mais próximo primeiro)
-                    if (!a.due_date || !b.due_date) return 0;
-                    return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-                }),
-            completed: boards.filter(board => board.allTasksCompleted),
-            noDueDate: boards.filter(board => !board.due_date && !board.allTasksCompleted),
-            future: boards
-                .filter(board => {
-                    if (!board.due_date || board.allTasksCompleted) return false;
-                    return !isOverdue(board.due_date) && !isToday(board.due_date) && !isThisWeek(board.due_date);
-                })
-                .sort((a, b) => {
-                    // Ordenar por data de vencimento (mais próximo primeiro)
-                    if (!a.due_date || !b.due_date) return 0;
-                    return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-                })
-        };
-        return groups;
+                }
+                // Segundo: boards com data vêm antes dos sem data
+                if (a.due_date && !b.due_date) return -1;
+                if (!a.due_date && b.due_date) return 1;
+                // Terceiro: boards sem data ordenados por data de criação (mais recentes primeiro)
+                if (a.created_at && b.created_at) {
+                    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                }
+                return 0;
+            });
+
+        const concluidos = boards
+            .filter(board => board.allTasksCompleted)
+            .sort((a, b) => {
+                if (a.last_updated_at && b.last_updated_at) {
+                    return new Date(b.last_updated_at).getTime() - new Date(a.last_updated_at).getTime();
+                }
+                return 0;
+            });
+
+        return { emAtendimento, concluidos };
     };
 
     const [showModal, setShowModal] = useState(false);
@@ -200,10 +192,7 @@ const Dashboard = () => {
             const response = await api.post('/boards', boardData);
             const boardId = response.data.data.id;
 
-            // Create default columns
-            await api.post('/columns', { board_id: boardId, title: 'A Fazer' });
-            await api.post('/columns', { board_id: boardId, title: 'Em Andamento' });
-            await api.post('/columns', { board_id: boardId, title: 'Concluído' });
+            // Default columns are created automatically by the backend
 
             setNewBoardTitle("");
             setNewBoardDueDate("");
@@ -271,7 +260,7 @@ const Dashboard = () => {
                     {boards.map(board => (
                         <ListGroup.Item key={board.id} className="board-list-item d-flex justify-content-between align-items-center">
                             <div className="flex-grow-1">
-                                <Link to={`/boards/${board.id}`} className="text-decoration-none">
+                                <Link to={board.project_id ? `/projects/${board.project_id}/boards/${board.id}` : `/boards/${board.id}`} className="text-decoration-none">
                                     <div className="fw-bold">{board.title}</div>
                                     <div className="d-flex flex-column">
                                         {board.responsible && (
@@ -363,12 +352,8 @@ const Dashboard = () => {
                     const groupedBoards = groupBoardsByDate(boards);
                     return (
                         <div>
-                            {renderBoardGroup("🚨 Atrasados", groupedBoards.overdue, "danger")}
-                            {renderBoardGroup("📅 Hoje", groupedBoards.today, "warning")}
-                            {renderBoardGroup("📆 Esta Semana", groupedBoards.thisWeek, "info")}
-                            {renderBoardGroup("📋 Sem Prazo", groupedBoards.noDueDate, "secondary")}
-                            {renderBoardGroup("🔮 Futuros", groupedBoards.future, "primary", true)}
-                            {renderBoardGroup("✅ Concluídos", groupedBoards.completed, "success", true, true, true)}
+                            {renderBoardGroup("Em Atendimento", groupedBoards.emAtendimento, "primary")}
+                            {renderBoardGroup("Concluídos", groupedBoards.concluidos, "success", true, true, true)}
                         </div>
                     );
                 })() : (

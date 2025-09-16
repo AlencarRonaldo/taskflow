@@ -15,6 +15,7 @@ const calendarRoutes = require('./calendarRoutes'); // Import calendarRoutes
 const ActivityLogger = require('./activityLogger');
 const automationRoutes = require('./automationRoutes'); // Import automationRoutes
 const automationWorker = require('./automationWorker'); // Import automation worker
+const projectRoutes = require('./projectRoutes'); // Import projectRoutes
 
 // API REST and PWA imports
 const swaggerUi = require('swagger-ui-express');
@@ -120,7 +121,7 @@ app.use('/api', (req, res, next) => {
     next();
 });
 
-const HTTP_PORT = process.env.PORT || 8000;
+const HTTP_PORT = process.env.PORT || 8001;
 
 // Root endpoint
 app.get("/", (req, res, next) => {
@@ -195,6 +196,55 @@ app.get('/users-public', async (req, res) => {
     } catch (err) {
         console.error('Users fetch error:', err);
         res.status(500).json({ error: err.message });
+    }
+});
+
+// TEMPORARY TEST LOGIN ENDPOINT (NO MIDDLEWARES)
+app.post('/test-login', async (req, res) => {
+    console.log('🔍 TEST LOGIN ENDPOINT HIT');
+    console.log('Body:', req.body);
+    
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email e senha são obrigatórios' });
+    }
+    
+    try {
+        const user = await new Promise((resolve, reject) => {
+            db.get("SELECT * FROM users WHERE email = ?", [email], (err, user) => {
+                if (err) reject(err);
+                else resolve(user);
+            });
+        });
+        
+        if (!user) {
+            return res.status(401).json({ error: 'Usuário não encontrado' });
+        }
+        
+        const isValidPassword = await bcrypt.compare(password, user.password_hash);
+        if (!isValidPassword) {
+            return res.status(401).json({ error: 'Senha inválida' });
+        }
+        
+        const token = jwt.sign(
+            { id: user.id, email: user.email },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+        
+        const { password_hash: _, ...userResponse } = user;
+        
+        res.json({ 
+            token,
+            user: userResponse,
+            expiresIn: '24h',
+            message: 'Login realizado com sucesso'
+        });
+        
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
 
@@ -1246,9 +1296,19 @@ app.use('/api/timeline', timelineRoutes);
 app.use('/api/grid', gridRoutes);
 app.use('/api/users', userRoutes);
 
+// PROJECT ROUTES (MOVED TO TOP PRIORITY - BEFORE GENERAL API ROUTES)
+console.log('📁 Mounting project routes with debug middleware');
+app.use('/api/projects', (req, res, next) => {
+    console.log('🔍 REQUEST TO /api/projects:', req.method, req.url);
+    console.log('🔍 Headers:', req.headers);
+    console.log('🔍 Body:', req.body);
+    next();
+}, verifyToken, projectRoutes);
+
 // 3. GENERAL API ROUTES (after specific routes to prevent conflicts)  
 console.log('📝 Mounting general /api routes');
-app.use('/api', apiRoutes);
+// COMMENT: apiRoutes has middleware blocking /api/projects - needs investigation
+// app.use('/api', apiRoutes);
 app.use('/api', boardRoutes);
 app.use('/api', automationRoutes.router);
 

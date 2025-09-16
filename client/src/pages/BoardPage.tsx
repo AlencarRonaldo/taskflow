@@ -1,5 +1,5 @@
 import React, { useEffect, useState, FormEvent, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Container, Card, Spinner, Alert, Button, Modal, Form, Badge } from 'react-bootstrap';
 import { api } from '../lib/api';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay, useDroppable } from '@dnd-kit/core';
@@ -89,8 +89,9 @@ const SortableCard: React.FC<{
   onSelect?: (cardId: number, selected: boolean) => void,
   bulkMode?: boolean,
   columnTitle?: string,
-  onQuickMove?: (cardId: number, targetStatus: string) => void
-}> = ({ card, onCardClick, isSelected, onSelect, bulkMode, columnTitle, onQuickMove }) => {
+  onQuickMove?: (cardId: number, targetStatus: string) => void,
+  onDeleteCard?: (cardId: number) => void
+}> = ({ card, onCardClick, isSelected, onSelect, bulkMode, columnTitle, onQuickMove, onDeleteCard }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
         id: `card-${card.id}`, 
         data: { 
@@ -162,9 +163,12 @@ const SortableCard: React.FC<{
                         console.log('🚀 Moving card to in-progress:', card.id);
                         onQuickMove(card.id, 'in-progress');
                         // Feedback visual
-                        e.currentTarget.classList.add('success-animation');
+                        const target = e.currentTarget;
+                        target.classList.add('success-animation');
                         setTimeout(() => {
-                            e.currentTarget.classList.remove('success-animation');
+                            if (target && target.classList) {
+                                target.classList.remove('success-animation');
+                            }
                         }, 300);
                     }}
                     title="Mover para Em Progresso"
@@ -200,9 +204,12 @@ const SortableCard: React.FC<{
                         console.log('🚀 Moving card to completed:', card.id);
                         onQuickMove(card.id, 'completed');
                         // Feedback visual
-                        e.currentTarget.classList.add('success-animation');
+                        const target = e.currentTarget;
+                        target.classList.add('success-animation');
                         setTimeout(() => {
-                            e.currentTarget.classList.remove('success-animation');
+                            if (target && target.classList) {
+                                target.classList.remove('success-animation');
+                            }
                         }, 300);
                     }}
                     title="Marcar como Concluído"
@@ -219,6 +226,35 @@ const SortableCard: React.FC<{
         }
 
         return null;
+    };
+
+    const getDeleteButton = () => {
+        if (bulkMode || !onDeleteCard) return null;
+        
+        return (
+            <Button
+                variant="outline-danger"
+                size="sm"
+                className="quick-action-btn"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm('Tem certeza que deseja excluir este card?')) {
+                        console.log('🗑️ Deleting card:', card.id);
+                        onDeleteCard(card.id);
+                    }
+                }}
+                title="Excluir Card"
+                style={{
+                    backgroundColor: '#dc3545',
+                    color: 'white',
+                    border: '1px solid #dc3545',
+                    fontWeight: 'bold',
+                    marginLeft: '4px'
+                }}
+            >
+                🗑️
+            </Button>
+        );
     };
 
     return (
@@ -267,6 +303,9 @@ const SortableCard: React.FC<{
                         <div className="d-flex align-items-center gap-1">
                             {/* Botão de ação rápida para mobile */}
                             {getQuickActionButton()}
+                            
+                            {/* Botão de exclusão sempre visível */}
+                            {getDeleteButton()}
                             
                             {!bulkMode && (
                                 <div 
@@ -338,7 +377,8 @@ const Column: React.FC<{
   selectedCards?: Set<number>,
   onCardSelect?: (cardId: number, isSelected: boolean) => void,
   bulkActionMode?: boolean,
-  onQuickMove?: (cardId: number, targetStatus: string) => void
+  onQuickMove?: (cardId: number, targetStatus: string) => void,
+  onDeleteCard?: (cardId: number) => void
 }> = ({ 
   column, 
   onAddCard, 
@@ -356,7 +396,8 @@ const Column: React.FC<{
   selectedCards = new Set(),
   onCardSelect,
   bulkActionMode,
-  onQuickMove
+  onQuickMove,
+  onDeleteCard
 }) => {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [columnTitle, setColumnTitle] = useState(column.title);
@@ -530,6 +571,7 @@ const Column: React.FC<{
                                                         bulkMode={bulkActionMode}
                                                         columnTitle={column.title}
                                                         onQuickMove={onQuickMove}
+                                                        onDeleteCard={onDeleteCard}
                                                     />
                                                 ))}
                                             </div>
@@ -553,6 +595,7 @@ const Column: React.FC<{
                                             bulkMode={bulkActionMode}
                                             columnTitle={column.title}
                                             onQuickMove={onQuickMove}
+                                            onDeleteCard={onDeleteCard}
                                         />
                                     ))}
                                     {sortedCards.length === 0 && (
@@ -636,7 +679,9 @@ const SortableColumn: React.FC<{
 
 
 const BoardPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id, projectId } = useParams<{ id: string; projectId: string }>();
+  const boardId = parseInt(id || '0');
+  
   const [board, setBoard] = useState<IBoard | null>(null);
   const [activeColumn, setActiveColumn] = useState<IColumn | null>(null);
   const [activeCard, setActiveCard] = useState<ICard | null>(null);
@@ -651,6 +696,7 @@ const BoardPage: React.FC = () => {
   const [newCardAssigneeId, setNewCardAssigneeId] = useState<number | null>(null);
   const [newCardColumnId, setNewCardColumnId] = useState<number | null>(null);
   const [newCardDueDate, setNewCardDueDate] = useState<string | null>(null);
+  const [isCreatingCard, setIsCreatingCard] = useState(false);
   const [users, setUsers] = useState<IUser[]>([]);
   const [showCardDetailsModal, setShowCardDetailsModal] = useState(false);
   const [selectedCard, setSelectedCard] = useState<ICard | null>(null);
@@ -693,7 +739,7 @@ const BoardPage: React.FC = () => {
 
   const fetchBoard = async () => {
     try {
-      const response = await api.get(`/boards/${id}`);
+      const response = await api.get(`/boards/${boardId}`);
       setBoard(response.data.data);
     } catch (err) {
       setError('Failed to fetch board data.');
@@ -736,17 +782,17 @@ const BoardPage: React.FC = () => {
     }, 30000);
     
     return () => clearInterval(interval);
-  }, [id, isDragging]);
+  }, [boardId, isDragging]);
 
   const loadCollapsedColumns = () => {
-    const saved = localStorage.getItem(`collapsed-columns-${id}`);
+    const saved = localStorage.getItem(`collapsed-columns-${boardId}`);
     if (saved) {
       setCollapsedColumns(new Set(JSON.parse(saved)));
     }
   };
 
   const saveCollapsedColumns = (collapsed: Set<number>) => {
-    localStorage.setItem(`collapsed-columns-${id}`, JSON.stringify([...collapsed]));
+    localStorage.setItem(`collapsed-columns-${boardId}`, JSON.stringify([...collapsed]));
   };
 
   const toggleColumnCollapse = (columnId: number) => {
@@ -851,9 +897,16 @@ const BoardPage: React.FC = () => {
       
       // Recarregar board para refletir mudanças
       fetchBoard();
-    } catch (err) {
+    } catch (err: any) {
       console.error('❌ Error in quick move:', err);
-      setError('Falha ao mover o card');
+      
+      if (err.response?.status === 409) {
+        // Conflito de horário detectado
+        const conflictDetails = err.response.data?.details || 'Conflito de horário detectado';
+        setError(`⚠️ ${conflictDetails}`);
+      } else {
+        setError('Falha ao mover o card');
+      }
     }
   };
 
@@ -960,6 +1013,7 @@ const BoardPage: React.FC = () => {
       return;
     }
     setError(null);
+    setIsCreatingCard(true);
 
     try {
       await api.post('/cards', {
@@ -985,6 +1039,8 @@ const BoardPage: React.FC = () => {
         setError("Falha ao criar card.");
       }
       console.error(err);
+    } finally {
+      setIsCreatingCard(false);
     }
   };
 
@@ -1189,7 +1245,7 @@ const BoardPage: React.FC = () => {
               await api.put(`/cards/${activeCard.id}`, {
                 column_id: targetColumn.id,
                 order_index: targetCard.order_index,
-                status: targetCard.status
+                status: newStatus
               });
               console.log('✅ Card movement saved successfully');
             }
@@ -1259,7 +1315,7 @@ const BoardPage: React.FC = () => {
               await api.put(`/cards/${activeCard.id}`, {
                 column_id: newColumnId,
                 order_index: targetCard.order_index,
-                status: targetCard.status
+                status: newStatus
               });
             }
             if (!isDragging) {
@@ -1323,7 +1379,7 @@ const BoardPage: React.FC = () => {
     setError(null);
 
     try {
-      await api.post('/columns', { board_id: id, title: newColumnTitle });
+      await api.post('/columns', { board_id: boardId, title: newColumnTitle });
       setNewColumnTitle("");
       setShowNewColumnModal(false);
       fetchBoard(); // Refresh the board data
@@ -1458,7 +1514,7 @@ const BoardPage: React.FC = () => {
           {board && (
             <>
               <div className="d-flex justify-content-between align-items-center mb-3">
-                <h1 className="text-white text-shadow">{board.title}</h1>
+                <h1 className="text-shadow mb-0">{board.title}</h1>
                 <div className="d-flex gap-2">
                   <Button 
                     variant={showFilters ? "light" : "outline-light"}
@@ -1588,7 +1644,13 @@ const BoardPage: React.FC = () => {
                 </Card>
               )}
               <div className="d-flex gap-2 mb-3">
-                <Button variant="primary" onClick={() => setShowNewColumnModal(true)}>Add New Column</Button>
+                <Button 
+                  variant="primary" 
+                  onClick={() => window.location.href = projectId ? `/projects/${projectId}` : '/projects'}
+                  title="Voltar ao Dashboard do Projeto"
+                >
+                  ← Voltar
+                </Button>
                 <Button variant="success" onClick={handleShareWithTechnician} disabled={isGeneratingLink}>
                   {isGeneratingLink ? (
                     <span key="loading">
@@ -1627,6 +1689,7 @@ const BoardPage: React.FC = () => {
                           onCardSelect={handleCardSelect}
                           bulkActionMode={bulkActionMode}
                           onQuickMove={handleQuickMove}
+                          onDeleteCard={handleDeleteCard}
                         />
                       </div>
                     );
@@ -1661,11 +1724,19 @@ const BoardPage: React.FC = () => {
         </Modal.Body>
       </Modal>
 
-            <Modal show={showNewCardModal} onHide={() => setShowNewCardModal(false)} className="app-modal">
+            <Modal show={showNewCardModal} onHide={() => {
+                setShowNewCardModal(false);
+                setError(null);
+            }} className="app-modal">
                 <Modal.Header closeButton>
                     <Modal.Title>Create New Card</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
+                    {error && (
+                        <Alert variant="danger" dismissible onClose={() => setError(null)}>
+                            {error}
+                        </Alert>
+                    )}
                     <Form onSubmit={handleCreateNewCard}>
                         <Form.Group className="mb-3">
                             <Form.Label>Card Title</Form.Label>
@@ -1713,8 +1784,26 @@ const BoardPage: React.FC = () => {
                                 onDateChange={setNewCardDueDate}
                             />
                         </Form.Group>
-                        <Button variant="primary" type="submit">
-                            Create Card
+                        <Button 
+                            variant="primary" 
+                            type="submit"
+                            disabled={isCreatingCard}
+                        >
+                            {isCreatingCard ? (
+                                <>
+                                    <Spinner 
+                                        as="span" 
+                                        animation="border" 
+                                        size="sm" 
+                                        role="status" 
+                                        aria-hidden="true" 
+                                        className="me-2"
+                                    />
+                                    Creating...
+                                </>
+                            ) : (
+                                'Create Card'
+                            )}
                         </Button>
                     </Form>
                 </Modal.Body>
@@ -1890,6 +1979,7 @@ const BoardPage: React.FC = () => {
                         isOverlay={true} 
                         dragHandleProps={{}}
                         onQuickMove={handleQuickMove}
+                        onDeleteCard={handleDeleteCard}
                     />
                 ) : null}
             </DragOverlay>
