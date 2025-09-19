@@ -282,7 +282,7 @@ router.get('/v1/boards', apiLimiter, verifyToken, (req, res) => {
   const offset = (page - 1) * limit;
   
   // Get total count
-  db.get("SELECT COUNT(*) as total FROM boards WHERE userId = ?", [req.userId], (err, countResult) => {
+  db.get("SELECT COUNT(*) as total FROM boards WHERE user_id_creator = ?", [req.userId], (err, countResult) => {
     if (err) {
       return res.status(500).json({ error: "Erro interno do servidor" });
     }
@@ -292,7 +292,7 @@ router.get('/v1/boards', apiLimiter, verifyToken, (req, res) => {
     
     // Get boards with pagination
     db.all(
-      "SELECT * FROM boards WHERE userId = ? ORDER BY createdAt DESC LIMIT ? OFFSET ?",
+      "SELECT * FROM boards WHERE user_id_creator = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
       [req.userId, limit, offset],
       (err, boards) => {
         if (err) {
@@ -361,7 +361,7 @@ router.post('/v1/boards', apiLimiter, verifyToken, validationRules.createBoard, 
   const createdAt = new Date().toISOString();
   
   db.run(
-    "INSERT INTO boards (name, description, userId, background, isPublic, createdAt) VALUES (?, ?, ?, ?, ?, ?)",
+    "INSERT INTO boards (name, description, user_id_creator, background, isPublic, createdAt) VALUES (?, ?, ?, ?, ?, ?)",
     [name, description, req.userId, background, isPublic ? 1 : 0, createdAt],
     function(err) {
       if (err) {
@@ -415,7 +415,7 @@ router.get('/v1/boards/:id', apiLimiter, verifyToken, (req, res) => {
   const boardId = parseInt(req.params.id);
   
   db.get(
-    "SELECT * FROM boards WHERE id = ? AND (userId = ? OR isPublic = 1)",
+    "SELECT * FROM boards WHERE id = ? AND (user_id_creator = ? OR isPublic = 1)",
     [boardId, req.userId],
     (err, board) => {
       if (err) {
@@ -485,7 +485,7 @@ router.put('/v1/boards/:id', apiLimiter, verifyToken, validationRules.updateBoar
   const updates = req.body;
   
   // First check if board exists and user has permission
-  db.get("SELECT * FROM boards WHERE id = ? AND userId = ?", [boardId, req.userId], (err, board) => {
+  db.get("SELECT * FROM boards WHERE id = ? AND user_id_creator = ?", [boardId, req.userId], (err, board) => {
     if (err) {
       return res.status(500).json({ error: "Erro interno do servidor" });
     }
@@ -561,7 +561,7 @@ router.delete('/v1/boards/:id', strictLimiter, verifyToken, (req, res) => {
   const boardId = parseInt(req.params.id);
   
   // Check if board exists and user has permission
-  db.get("SELECT id FROM boards WHERE id = ? AND userId = ?", [boardId, req.userId], (err, board) => {
+  db.get("SELECT id FROM boards WHERE id = ? AND user_id_creator = ?", [boardId, req.userId], (err, board) => {
     if (err) {
       return res.status(500).json({ error: "Erro interno do servidor" });
     }
@@ -810,7 +810,7 @@ router.post('/v1/cards', apiLimiter, verifyToken, validationRules.createCard, ha
     SELECT c.id, c.boardId 
     FROM columns c 
     JOIN boards b ON c.boardId = b.id 
-    WHERE c.id = ? AND b.userId = ?
+    WHERE c.id = ? AND b.user_id_creator = ?
   `, [columnId, req.userId], (err, column) => {
     if (err) {
       return res.status(500).json({ error: "Erro interno do servidor" });

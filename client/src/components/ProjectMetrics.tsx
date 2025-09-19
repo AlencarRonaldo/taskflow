@@ -28,7 +28,7 @@ interface Card {
 
 interface ProjectAnalytics {
     totalBoards: number;
-    totalCards: number;
+    totalCards: number; // This will now be the total cards from analytics endpoint
     boardsWithCards: number;
     emptyBoards: number;
     cardsCompleted: number;
@@ -38,6 +38,7 @@ interface ProjectAnalytics {
     boards: Board[];
     recentCards: Card[];
     completionRate: number;
+    totalCompletedProjects: number; // New field
 }
 
 export const ProjectMetrics: React.FC<ProjectMetricsProps> = ({ projectId, projectName, projectColor }) => {
@@ -50,23 +51,21 @@ export const ProjectMetrics: React.FC<ProjectMetricsProps> = ({ projectId, proje
         try {
             setLoading(true);
             
-            // Buscar boards do projeto
+            // Fetch aggregated analytics data for the project
+            const analyticsResponse = await api.get(`/v1/analytics/dashboard?project_id=${projectId}`);
+            const analyticsData = analyticsResponse.data.totals;
+
+            // Fetch boards for the current project
             const boardsResponse = await api.get(`/boards?project_id=${projectId}`);
-            
             const boards = Array.isArray(boardsResponse.data) ? boardsResponse.data : 
                           boardsResponse.data?.data && Array.isArray(boardsResponse.data.data) ? boardsResponse.data.data : [];
             
-            console.log('🔍 Boards fetched for project:', projectId, boards);
-            
-            // Buscar cards de todos os boards do projeto
+            // Fetch all cards for the current project to calculate recentCards, criticalCards, cardsInProgress, cardsTodo
             let allCards: Card[] = [];
             for (const board of boards) {
                 try {
-                    // Buscar dados completos do board (incluindo cards)
                     const boardResponse = await api.get(`/boards/${board.id}`);
                     const boardData = boardResponse.data.data;
-                    
-                    // Extrair todos os cards de todas as colunas
                     if (boardData.columns) {
                         for (const column of boardData.columns) {
                             if (column.cards) {
@@ -83,72 +82,67 @@ export const ProjectMetrics: React.FC<ProjectMetricsProps> = ({ projectId, proje
                     console.log(`Erro ao buscar dados do board ${board.id}:`, error);
                 }
             }
-            
-            // Calcular estatísticas
-            const totalBoards = boards.length;
-            const totalCards = allCards.length;
-            const boardsWithCards = boards.filter((board: Board) => board.cards_count > 0).length;
-            const emptyBoards = totalBoards - boardsWithCards;
-            
-            // Usar a mesma lógica do backend: cards na coluna "Concluído" são considerados concluídos
-            const cardsCompleted = allCards.filter(card => {
-                // Se tem status 'completed', é concluído
-                if (card.status === 'completed') return true;
-                
-                // Se está na coluna "Concluído", é concluído (independente do status)
-                if (card.column_title) {
-                    const columnTitle = card.column_title.toLowerCase();
-                    return columnTitle.includes('concluído') || columnTitle.includes('completed');
-                }
-                
-                return false;
-            }).length;
-            
-            const cardsInProgress = allCards.filter(card => {
-                // Se já foi marcado como concluído acima, não é "em progresso"
-                if (card.status === 'completed') return false;
-                if (card.column_title) {
-                    const columnTitle = card.column_title.toLowerCase();
-                    if (columnTitle.includes('concluído') || columnTitle.includes('completed')) {
-                        return false;
-                    }
-                }
-                return card.status === 'in_progress';
-            }).length;
-            
-            const cardsTodo = allCards.filter(card => {
-                // Se já foi marcado como concluído ou em progresso acima, não é "todo"
-                if (card.status === 'completed') return false;
-                if (card.column_title) {
-                    const columnTitle = card.column_title.toLowerCase();
-                    if (columnTitle.includes('concluído') || columnTitle.includes('completed')) {
-                        return false;
-                    }
-                }
-                if (card.status === 'in_progress') return false;
-                return card.status === 'todo';
-            }).length;
-            const criticalCards = allCards.filter(card => card.priority === 'critical' || card.priority === 'high').length;
-            
-            const completionRate = totalCards > 0 ? Math.round((cardsCompleted / totalCards) * 100) : 0;
-            
-            // Pegar cards recentes (últimos 5)
+
             const recentCards = allCards
                 .sort((a, b) => new Date(b.due_date || '').getTime() - new Date(a.due_date || '').getTime())
                 .slice(0, 5);
             
+            const criticalCards = allCards.filter(card => card.priority === 'critical' || card.priority === 'high').length;
+
+            const boardsWithCards = boards.filter((board: Board) => board.cards_count > 0).length;
+            const emptyBoards = boards.length - boardsWithCards;
+
+            // Recalculate cardsInProgress and cardsTodo using the allCards array
+            const cardsCompleted = allCards.filter(card => {
+                if (card.status === 'completed') return true;
+                if (card.column_title) {
+                    const columnTitle = card.column_title.toLowerCase();
+                    return columnTitle.includes('concluí') || columnTitle.includes('completed');
+                }
+                return card.status === 'Concluído';
+            }).length;
+            
+            const cardsInProgress = allCards.filter(card => {
+                if (card.status === 'completed') return false;
+                if (card.column_title) {
+                    const columnTitle = card.column_title.toLowerCase();
+                    if (columnTitle.includes('concluí') || columnTitle.includes('completed')) {
+                        return false;
+                    }
+                }
+                const cardStatusLower = card.status?.toLowerCase();
+                return card.status === 'in_progress' || card.status === 'Em Andamento' || cardStatusLower?.includes('andamento') || card.status === 'doing';
+            }).length;
+            
+            const cardsTodo = allCards.filter(card => {
+                if (card.status === 'completed') return false;
+                if (card.column_title) {
+                    const columnTitle = card.column_title.toLowerCase();
+                    if (columnTitle.includes('concluí') || columnTitle.includes('completed')) {
+                        return false;
+                    }
+                }
+                const cardStatusLower = card.status?.toLowerCase();
+                if (card.status === 'in_progress' || card.status === 'Em Andamento' || cardStatusLower?.includes('andamento') || card.status === 'doing') return false;
+                
+                return card.status === 'todo' || card.status === 'A Fazer' || cardStatusLower?.includes('fazer');
+            }).length;
+
+            const completionRate = allCards.length > 0 ? Math.round((cardsCompleted / allCards.length) * 100) : 0;
+
             const projectAnalytics: ProjectAnalytics = {
-                totalBoards,
-                totalCards,
-                boardsWithCards,
-                emptyBoards,
-                cardsCompleted,
-                cardsInProgress,
-                cardsTodo,
-                criticalCards,
-                boards,
-                recentCards,
-                completionRate
+                totalBoards: analyticsData.totalBoards,
+                totalCards: analyticsData.totalCards, // This is total cards from analytics endpoint
+                boardsWithCards: boardsWithCards,
+                emptyBoards: emptyBoards,
+                cardsCompleted: cardsCompleted,
+                cardsInProgress: cardsInProgress,
+                cardsTodo: cardsTodo,
+                criticalCards: criticalCards,
+                boards: boards,
+                recentCards: recentCards,
+                completionRate: completionRate,
+                totalCompletedProjects: analyticsData.totalCompletedProjects
             };
             
             setAnalytics(projectAnalytics);
@@ -240,15 +234,15 @@ export const ProjectMetrics: React.FC<ProjectMetricsProps> = ({ projectId, proje
                     <Card className="h-100 border-primary">
                         <Card.Body className="text-center py-3 px-2">
                             <h3 className="text-primary mb-2">{analytics.totalBoards}</h3>
-                            <p className="mb-0 fw-medium">Total Boards</p>
+                            <p className="mb-0 fw-medium">Total de projetos em aberto</p>
                         </Card.Body>
                     </Card>
                 </Col>
                 <Col xs={6} md={3}>
                     <Card className="h-100 border-success">
                         <Card.Body className="text-center py-3 px-2">
-                            <h3 className="text-success mb-2">{analytics.totalCards}</h3>
-                            <p className="mb-0 fw-medium">Total Cards</p>
+                            <h3 className="text-success mb-2">{analytics.totalCompletedProjects}</h3>
+                            <p className="mb-0 fw-medium">Total de projetos concluídos</p>
                         </Card.Body>
                     </Card>
                 </Col>

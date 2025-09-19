@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Modal, Form, Badge, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
-import { FaPlus, FaFolder, FaUsers, FaClipboardList, FaTasks, FaClock } from 'react-icons/fa';
+import { FaPlus, FaFolder, FaUsers, FaClipboardList, FaTasks, FaClock, FaCheckCircle } from 'react-icons/fa';
+import './ProjectsPage.css';
 
 interface Project {
     id: number;
@@ -20,6 +21,9 @@ interface Project {
     next_appointment_title?: string;
     next_appointment_due_date?: string;
     is_active: boolean;
+    is_completed?: number;
+    completed_at?: string;
+    last_activity_at?: string;
 }
 
 const ProjectsPage: React.FC = () => {
@@ -86,6 +90,16 @@ const ProjectsPage: React.FC = () => {
         return new Date(dateString).toLocaleDateString('pt-BR');
     };
 
+    const formatDateTime = (dateString: string) => {
+        return new Date(dateString).toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
     const getRoleBadge = (role: string) => {
         const badges: { [key: string]: string } = {
             owner: 'danger',
@@ -104,10 +118,10 @@ const ProjectsPage: React.FC = () => {
 
     const getProjectCategory = (project: Project): string => {
         if (project.is_active === 0) {
-            return 'Finalizado';
+            return 'Arquivado';
         }
-        if (project.tasks_count !== undefined && project.tasks_count > 0 && project.tasks_count === project.completed_tasks_count) {
-            return 'Finalizado';
+        if (project.is_completed === 1) {
+            return 'Concluído';
         }
         if (project.tasks_count !== undefined && project.tasks_count > 0 && project.tasks_count > project.completed_tasks_count) {
             return 'Em Andamento';
@@ -135,7 +149,8 @@ const ProjectsPage: React.FC = () => {
     const categorizedProjects: { [key: string]: Project[] } = {
         'A Iniciar': [],
         'Em Andamento': [],
-        'Finalizado': [],
+        'Concluído': [],
+        'Arquivado': [],
     };
 
     projects.forEach(project => {
@@ -187,74 +202,134 @@ const ProjectsPage: React.FC = () => {
                     </Card.Body>
                 </Card>
             ) : (
-                <Row>
-                    {projects.map((project) => (
-                        <Col key={project.id} xs={12} md={6} lg={4} xl={3} className="mb-4">
-                            <Card 
-                                className="h-100 shadow-sm project-card"
-                                style={{ 
-                                    cursor: 'pointer',
-                                    borderTop: `4px solid ${project.color}`,
-                                    transition: 'transform 0.2s, box-shadow 0.2s'
-                                }}
-                                onClick={() => handleProjectClick(project.id)}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(-5px)';
-                                    e.currentTarget.style.boxShadow = '0 0.5rem 1rem rgba(0,0,0,.15)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                    e.currentTarget.style.boxShadow = '';
-                                }}
-                            >
-                                <Card.Body>
-                                    <div className="d-flex justify-content-between align-items-start mb-2">
-                                        <h5 className="card-title mb-0">{project.name}</h5>
-                                        {getRoleBadge(project.role)}
-                                    </div>
-                                    
-                                    {project.description && (
-                                        <p className="text-muted small mb-3">
-                                            {project.description.length > 100 
-                                                ? project.description.substring(0, 100) + '...'
-                                                : project.description}
-                                        </p>
-                                    )}
+                <div>
+                    {Object.entries(categorizedProjects).map(([category, categoryProjects]) => {
+                        if (categoryProjects.length === 0) return null;
+                        
+                        return (
+                            <div key={category} className="mb-5">
+                                <h3 className="mb-3 text-muted">
+                                    {category} ({categoryProjects.length})
+                                </h3>
+                                <Row>
+                                    {categoryProjects.map((project) => (
+                                        <Col key={project.id} xs={12} sm={6} md={4} lg={3} className="mb-4">
+                                            <Card 
+                                                className="h-100"
+                                                style={{ 
+                                                    cursor: 'pointer',
+                                                    borderTop: `3px solid ${project.color}`,
+                                                    height: '200px'
+                                                }}
+                                                onClick={() => handleProjectClick(project.id)}
+                                            >
+                                                <Card.Body className="p-2">
+                                                    <div className="d-flex justify-content-between align-items-start mb-2">
+                                                        <div className="d-flex align-items-center">
+                                                            <div 
+                                                                className="me-3 rounded-circle d-flex align-items-center justify-content-center"
+                                                                style={{ 
+                                                                    width: '40px', 
+                                                                    height: '40px', 
+                                                                    backgroundColor: project.color,
+                                                                    fontSize: '16px',
+                                                                    color: 'white',
+                                                                    fontWeight: 'bold'
+                                                                }}
+                                                            >
+                                                                {project.logo ? (
+                                                                    <img 
+                                                                        src={project.logo} 
+                                                                        alt={project.name} 
+                                                                        style={{ width: '24px', height: '24px' }}
+                                                                    />
+                                                                ) : (
+                                                                    project.name.charAt(0).toUpperCase()
+                                                                )}
+                                                            </div>
+                                                            <div>
+                                                                <h5 className="mb-1" style={{ fontSize: '14px' }}>
+                                                                    {project.name}
+                                                                </h5>
+                                                                <div className="d-flex align-items-center gap-2">
+                                                                    <Badge 
+                                                                        bg={project.is_completed === 1 ? 'success' : 'primary'} 
+                                                                        className="px-2 py-1"
+                                                                        style={{ fontSize: '10px' }}
+                                                                    >
+                                                                        {project.is_completed === 1 ? 'Concluído' : getProjectCategory(project)}
+                                                                    </Badge>
+                                                                    {getRoleBadge(project.role)}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    {project.description && (
+                                                        <p className="text-muted mb-2" style={{ fontSize: '11px' }}>
+                                                            {project.description.length > 60 
+                                                                ? project.description.substring(0, 60) + '...'
+                                                                : project.description}
+                                                        </p>
+                                                    )}
 
-                                    <div className="d-flex justify-content-between text-muted small">
-                                        <span>
-                                            <FaClipboardList className="me-1" />
-                                            {project.boards_count} boards
-                                        </span>
-                                        <span>
-                                            <FaUsers className="me-1" />
-                                            {project.members_count} {project.members_count === 1 ? 'membro' : 'membros'}
-                                        </span>
-                                    </div>
+                                                    <div className="d-flex justify-content-between mb-2">
+                                                        <small className="text-muted" style={{ fontSize: '10px' }}>
+                                                            <FaFolder className="me-1" />
+                                                            {project.boards_count} boards
+                                                        </small>
+                                                        <small className="text-muted" style={{ fontSize: '10px' }}>
+                                                            <FaUsers className="me-1" />
+                                                            {project.members_count} membros
+                                                        </small>
+                                                    </div>
 
-                                    {project.tasks_count !== undefined && (
-                                        <div className="mt-2 text-muted small">
-                                            <FaTasks className="me-1" />
-                                            {project.tasks_count} tarefas
-                                        </div>
-                                    )}
+                                                    {project.next_appointment_title && project.next_appointment_due_date && (
+                                                        <div className={`p-2 rounded mb-2 ${isApproaching(project.next_appointment_due_date) ? 'bg-warning bg-opacity-10' : 'bg-light'}`}>
+                                                            <div className="d-flex align-items-center">
+                                                                <FaClock className="me-2 text-warning" style={{ fontSize: '10px' }} />
+                                                                <div>
+                                                                    <div className="fw-medium" style={{ fontSize: '10px' }}>
+                                                                        {project.next_appointment_title.length > 20 ? 
+                                                                            `${project.next_appointment_title.substring(0, 20)}...` : 
+                                                                            project.next_appointment_title
+                                                                        }
+                                                                    </div>
+                                                                    <small className="text-muted" style={{ fontSize: '9px' }}>
+                                                                        {formatDate(project.next_appointment_due_date)}
+                                                                    </small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
 
-                                    {project.next_appointment_title && project.next_appointment_due_date && (
-                                        <div className={`mt-2 text-muted small ${isApproaching(project.next_appointment_due_date) ? 'flashing-red' : ''}`}>
-                                            <FaClock className="me-1" />
-                                            <strong>Próximo:</strong> {project.next_appointment_title} em {formatDate(project.next_appointment_due_date)}
-                                        </div>
-                                    )}
-
-                                    <div className="mt-3 text-muted small">
-                                        <FaClock className="me-1" />
-                                        Criado em {formatDate(project.created_at)}
-                                    </div>
-                                </Card.Body>
-                            </Card>
-                        </Col>
-                    ))}
-                </Row>
+                                                    <div className="mt-auto pt-2 border-top">
+                                                        <div className="d-flex justify-content-between align-items-center">
+                                                            <small className="text-muted" style={{ fontSize: '9px' }}>
+                                                                Criado {formatDate(project.created_at)}
+                                                            </small>
+                                                            {project.is_completed === 1 && project.completed_at ? (
+                                                                <small className="text-success fw-medium" style={{ fontSize: '9px' }}>
+                                                                    <FaCheckCircle className="me-1" />
+                                                                    {formatDate(project.completed_at)}
+                                                                </small>
+                                                            ) : project.last_activity_at ? (
+                                                                <small className="text-info fw-medium" style={{ fontSize: '9px' }}>
+                                                                    <FaClock className="me-1" />
+                                                                    {formatDateTime(project.last_activity_at)}
+                                                                </small>
+                                                            ) : null}
+                                                        </div>
+                                                    </div>
+                                                </Card.Body>
+                                            </Card>
+                                        </Col>
+                                    ))}
+                                </Row>
+                            </div>
+                        );
+                    })}
+                </div>
             )}
 
             {/* Create Project Modal */}

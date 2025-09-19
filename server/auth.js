@@ -14,7 +14,7 @@ const verifyToken = (req, res, next) => {
 
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
         if (err) {
-            console.log('❌ JWT verification failed:', err.message);
+            console.log('❌ JWT verification failed:', err); // Log the full error object
             return res.status(401).send({ message: 'Unauthorized!' });
         }
         console.log('✅ JWT verified, user:', decoded);

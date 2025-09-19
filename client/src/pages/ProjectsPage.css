@@ -1,0 +1,28 @@
+/* Original Project Cards Styles */
+.project-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15) !important;
+}
+
+/* Ensure all cards have the same height */
+.card {
+    height: 200px !important;
+    min-height: 200px !important;
+    max-height: 200px !important;
+}
+
+.card-body {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+}
+
+@keyframes flash {
+    0%, 100% { color: red; }
+    50% { color: inherit; }
+}
+
+.flashing-red {
+    animation: flash 1.5s infinite;
+}

@@ -45,7 +45,30 @@ router.get('/', (req, res) => {
                 (SELECT COUNT(*) FROM cards c JOIN columns col ON c.column_id = col.id JOIN boards b ON col.board_id = b.id WHERE b.project_id = p.id) as tasks_count,
                 (SELECT COUNT(*) FROM cards c JOIN columns col ON c.column_id = col.id JOIN boards b ON col.board_id = b.id WHERE b.project_id = p.id AND c.status = 'done') as completed_tasks_count,
                 (SELECT c.title FROM cards c JOIN columns col ON c.column_id = col.id JOIN boards b ON col.board_id = b.id WHERE b.project_id = p.id AND c.due_date > CURRENT_TIMESTAMP ORDER BY c.due_date ASC LIMIT 1) as next_appointment_title,
-                (SELECT c.due_date FROM cards c JOIN columns col ON c.column_id = col.id JOIN boards b ON col.board_id = b.id WHERE b.project_id = p.id AND c.due_date > CURRENT_TIMESTAMP ORDER BY c.due_date ASC LIMIT 1) as next_appointment_due_date
+                (SELECT c.due_date FROM cards c JOIN columns col ON c.column_id = col.id JOIN boards b ON col.board_id = b.id WHERE b.project_id = p.id AND c.due_date > CURRENT_TIMESTAMP ORDER BY c.due_date ASC LIMIT 1) as next_appointment_due_date,
+                -- Project completion status
+                CASE 
+                    WHEN (SELECT COUNT(*) FROM boards WHERE project_id = p.id) = 0 THEN 0
+                    WHEN (SELECT COUNT(*) FROM boards WHERE project_id = p.id AND allTasksCompleted = 0) = 0 THEN 1
+                    ELSE 0
+                END as is_completed,
+                -- Completion date (when the last board was completed)
+                CASE 
+                    WHEN (SELECT COUNT(*) FROM boards WHERE project_id = p.id) = 0 THEN NULL
+                    WHEN (SELECT COUNT(*) FROM boards WHERE project_id = p.id AND allTasksCompleted = 0) = 0 THEN 
+                        (SELECT MAX(last_updated_at) FROM boards WHERE project_id = p.id AND allTasksCompleted = 1)
+                    ELSE NULL
+                END as completed_at,
+                -- Last activity date (most recent update across all project activities)
+                CASE 
+                    WHEN (SELECT MAX(last_updated_at) FROM boards WHERE project_id = p.id) IS NOT NULL 
+                         AND (SELECT MAX(last_updated_at) FROM boards WHERE project_id = p.id) > COALESCE(p.updated_at, p.created_at)
+                    THEN (SELECT MAX(last_updated_at) FROM boards WHERE project_id = p.id)
+                    WHEN (SELECT MAX(c.updated_at) FROM cards c JOIN columns col ON c.column_id = col.id JOIN boards b ON col.board_id = b.id WHERE b.project_id = p.id) IS NOT NULL
+                         AND (SELECT MAX(c.updated_at) FROM cards c JOIN columns col ON c.column_id = col.id JOIN boards b ON col.board_id = b.id WHERE b.project_id = p.id) > COALESCE(p.updated_at, p.created_at)
+                    THEN (SELECT MAX(c.updated_at) FROM cards c JOIN columns col ON c.column_id = col.id JOIN boards b ON col.board_id = b.id WHERE b.project_id = p.id)
+                    ELSE COALESCE(p.updated_at, p.created_at)
+                END as last_activity_at
              FROM projects p
              JOIN project_members pm ON p.id = pm.project_id
              WHERE pm.user_id = ?

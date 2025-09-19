@@ -13,8 +13,15 @@ export const DueDatePicker: React.FC<DueDatePickerProps> = ({
   showAsCard = false 
 }) => {
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    onDateChange(value || null);
+    const dateValue = e.target.value;
+    if (dateValue) {
+      // Preserve time if it exists, otherwise default to midnight.
+      const timePart = dueDate && dueDate.includes('T') ? dueDate.split('T')[1] : '00:00:00';
+      const newDateTime = `${dateValue}T${timePart}`;
+      onDateChange(newDateTime);
+    } else {
+      onDateChange(null);
+    }
   };
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,12 +31,8 @@ export const DueDatePicker: React.FC<DueDatePickerProps> = ({
       const dateOnly = dueDate.split('T')[0];
       const newDateTime = `${dateOnly}T${timeValue}:00`;
       onDateChange(newDateTime);
-    } else if (timeValue) {
-      // If no date set, use today with the selected time
-      const today = new Date().toISOString().split('T')[0];
-      const newDateTime = `${today}T${timeValue}:00`;
-      onDateChange(newDateTime);
     }
+    // If no dueDate, do nothing. The user must select a date first.
   };
 
   const clearDate = () => {

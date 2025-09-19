@@ -489,6 +489,20 @@ router.post('/cards', verifyToken, async (req, res) => {
         const boardId = await getBoardIdFromColumn(column_id);
         if (boardId) {
             await updateBoardLastModified(boardId, userId);
+
+            // Delete example cards after a real card is created
+            const exampleCardTitles = [
+                '🎉 Bem-vindo ao seu novo board!',
+                '📝 Crie suas tarefas aqui'
+            ];
+            await run(
+                `DELETE FROM cards WHERE id IN (
+                    SELECT c.id FROM cards c
+                    JOIN columns co ON c.column_id = co.id
+                    WHERE co.board_id = ? AND c.title IN (?, ?)
+                )`,
+                [boardId, ...exampleCardTitles]
+            );
         }
         
         // Create card object for automation trigger

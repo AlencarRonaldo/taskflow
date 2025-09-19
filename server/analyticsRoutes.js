@@ -35,6 +35,14 @@ const router = express.Router();
 router.get('/dashboard', apiLimiter, verifyToken, async (req, res) => {
   const period = req.query.period || 'month';
   const userId = req.userId;
+  const projectId = req.query.project_id; // Get project_id from query
+
+  let projectFilter = '';
+  let projectParams = [];
+  if (projectId) {
+    projectFilter = ' AND b.project_id = ?';
+    projectParams.push(projectId);
+  }
   
   try {
     // Calculate date range based on period
@@ -62,7 +70,7 @@ router.get('/dashboard', apiLimiter, verifyToken, async (req, res) => {
     
     // Get basic counts
     const totalBoards = await new Promise((resolve, reject) => {
-      db.get("SELECT COUNT(*) as count FROM boards WHERE userId = ?", [userId], (err, result) => {
+      db.get(`SELECT COUNT(*) as count FROM boards b WHERE b.user_id_creator = ? ${projectFilter}`, [userId, ...projectParams], (err, result) => {
         if (err) reject(err);
         else resolve(result.count);
       });
@@ -74,7 +82,24 @@ router.get('/dashboard', apiLimiter, verifyToken, async (req, res) => {
         FROM cards c 
         JOIN columns col ON c.columnId = col.id 
         JOIN boards b ON col.boardId = b.id 
-        WHERE b.userId = ?
+        WHERE b.user_id_creator = ? ${projectFilter}
+      `, [userId, ...projectParams], (err, result) => {
+        if (err) reject(err);
+        else resolve(result.count);
+      });
+    });
+
+    const totalCompletedProjects = await new Promise((resolve, reject) => {
+      db.get(`
+        SELECT COUNT(p.id) AS count
+        FROM projects p
+        WHERE p.owner_id = ?
+          AND NOT EXISTS (
+            SELECT 1
+            FROM boards b
+            WHERE b.project_id = p.id
+              AND b.allTasksCompleted = 0
+          )
       `, [userId], (err, result) => {
         if (err) reject(err);
         else resolve(result.count);
@@ -88,8 +113,8 @@ router.get('/dashboard', apiLimiter, verifyToken, async (req, res) => {
         FROM cards c 
         JOIN columns col ON c.columnId = col.id 
         JOIN boards b ON col.boardId = b.id 
-        WHERE b.userId = ? AND LOWER(col.name) IN ('done', 'completed', 'finished')
-      `, [userId], (err, result) => {
+        WHERE b.user_id_creator = ? ${projectFilter} AND (LOWER(col.name) IN ('done', 'completed', 'finished') OR c.status = 'completed' OR c.status = 'Concluído')
+      `, [userId, ...projectParams], (err, result) => {
         if (err) reject(err);
         else resolve(result.count);
       });
@@ -102,11 +127,11 @@ router.get('/dashboard', apiLimiter, verifyToken, async (req, res) => {
         FROM cards c 
         JOIN columns col ON c.columnId = col.id 
         JOIN boards b ON col.boardId = b.id 
-        WHERE b.userId = ? 
-        AND c.dueDate IS NOT NULL 
-        AND c.dueDate < ? 
-        AND LOWER(col.name) NOT IN ('done', 'completed', 'finished')
-      `, [userId, endDateISO], (err, result) => {
+        WHERE b.user_id_creator = ? ${projectFilter}
+        AND c.due_date IS NOT NULL 
+        AND c.due_date < ? 
+        AND NOT (LOWER(col.name) IN ('done', 'completed', 'finished') OR c.status = 'completed' OR c.status = 'Concluído')
+      `, [userId, ...projectParams, endDateISO], (err, result) => {
         if (err) reject(err);
         else resolve(result.count);
       });
@@ -115,33 +140,33 @@ router.get('/dashboard', apiLimiter, verifyToken, async (req, res) => {
     // Get productivity data (cards created per day in period)
     const cardsCreated = await new Promise((resolve, reject) => {
       db.all(`
-        SELECT DATE(c.createdAt) as date, COUNT(*) as count
+        SELECT DATE(c.created_at) as date, COUNT(*) as count
         FROM cards c 
         JOIN columns col ON c.columnId = col.id 
         JOIN boards b ON col.boardId = b.id 
-        WHERE b.userId = ? 
-        AND c.createdAt >= ? AND c.createdAt <= ?
-        GROUP BY DATE(c.createdAt)
+        WHERE b.user_id_creator = ? ${projectFilter}
+        AND c.created_at >= ? AND c.created_at <= ?
+        GROUP BY DATE(c.created_at)
         ORDER BY date ASC
-      `, [userId, startDateISO, endDateISO], (err, result) => {
+      `, [userId, ...projectParams, startDateISO, endDateISO], (err, result) => {
         if (err) reject(err);
         else resolve(result);
       });
     });
     
     // Get cards completed per day (using updatedAt as proxy for completion)
-    const cardsCompleted = await new Promise((resolve, reject) => {
+    const cardsCompletedPerDay = await new Promise((resolve, reject) => { // Renamed to avoid conflict
       db.all(`
-        SELECT DATE(c.updatedAt) as date, COUNT(*) as count
+        SELECT DATE(c.updated_at) as date, COUNT(*) as count
         FROM cards c 
         JOIN columns col ON c.columnId = col.id 
         JOIN boards b ON col.boardId = b.id 
-        WHERE b.userId = ? 
-        AND c.updatedAt >= ? AND c.updatedAt <= ?
-        AND LOWER(col.name) IN ('done', 'completed', 'finished')
-        GROUP BY DATE(c.updatedAt)
+        WHERE b.user_id_creator = ? ${projectFilter}
+        AND c.updated_at >= ? AND c.updated_at <= ?
+        AND (LOWER(col.name) IN ('done', 'completed', 'finished') OR c.status = 'completed' OR c.status = 'Concluído')
+        GROUP BY DATE(c.updated_at)
         ORDER BY date ASC
-      `, [userId, startDateISO, endDateISO], (err, result) => {
+      `, [userId, ...projectParams, startDateISO, endDateISO], (err, result) => {
         if (err) reject(err);
         else resolve(result);
       });
@@ -154,9 +179,9 @@ router.get('/dashboard', apiLimiter, verifyToken, async (req, res) => {
         FROM cards c 
         JOIN columns col ON c.columnId = col.id 
         JOIN boards b ON col.boardId = b.id 
-        WHERE b.userId = ?
+        WHERE b.user_id_creator = ? ${projectFilter}
         GROUP BY c.priority
-      `, [userId], (err, result) => {
+      `, [userId, ...projectParams], (err, result) => {
         if (err) reject(err);
         else resolve(result);
       });
@@ -166,15 +191,15 @@ router.get('/dashboard', apiLimiter, verifyToken, async (req, res) => {
     const avgCompletionTime = await new Promise((resolve, reject) => {
       db.get(`
         SELECT AVG(
-          (julianday(c.updatedAt) - julianday(c.createdAt)) * 24 * 60 * 60
+          (julianday(c.updated_at) - julianday(c.created_at)) * 24 * 60 * 60
         ) as avgSeconds
         FROM cards c 
         JOIN columns col ON c.columnId = col.id 
         JOIN boards b ON col.boardId = b.id 
-        WHERE b.userId = ? 
-        AND LOWER(col.name) IN ('done', 'completed', 'finished')
-        AND c.updatedAt >= ? AND c.updatedAt <= ?
-      `, [userId, startDateISO, endDateISO], (err, result) => {
+        WHERE b.user_id_creator = ? ${projectFilter}
+        AND (LOWER(col.name) IN ('done', 'completed', 'finished') OR c.status = 'completed' OR c.status = 'Concluído')
+        AND c.updated_at >= ? AND c.updated_at <= ?
+      `, [userId, ...projectParams, startDateISO, endDateISO], (err, result) => {
         if (err) reject(err);
         else resolve(result.avgSeconds || 0);
       });
@@ -189,13 +214,14 @@ router.get('/dashboard', apiLimiter, verifyToken, async (req, res) => {
       totals: {
         totalBoards,
         totalCards,
+        totalCompletedProjects, // Added new field
         completedCards,
         overdueCards,
         completionRate: totalCards > 0 ? (completedCards / totalCards * 100).toFixed(2) : 0
       },
       productivity: {
         cardsCreated,
-        cardsCompleted,
+        cardsCompleted: cardsCompletedPerDay, // Use the renamed variable
         averageCompletionTimeHours: (avgCompletionTime / 3600).toFixed(2)
       },
       distributions: {
@@ -279,7 +305,7 @@ router.get('/boards/:id', apiLimiter, verifyToken, async (req, res) => {
   try {
     // Check if board exists and user has permission
     const board = await new Promise((resolve, reject) => {
-      db.get("SELECT * FROM boards WHERE id = ? AND userId = ?", [boardId, userId], (err, result) => {
+      db.get("SELECT * FROM boards WHERE id = ? AND user_id_creator = ?", [boardId, userId], (err, result) => {
         if (err) reject(err);
         else resolve(result);
       });
@@ -516,7 +542,7 @@ router.get('/users/:id', apiLimiter, verifyToken, async (req, res) => {
         FROM cards c 
         JOIN columns col ON c.columnId = col.id 
         JOIN boards b ON col.boardId = b.id 
-        WHERE b.userId = ? 
+        WHERE b.user_id_creator = ? 
         AND c.createdAt >= ? AND c.createdAt <= ?
       `, [targetUserId, startDateISO, endDateISO], (err, result) => {
         if (err) reject(err);
@@ -530,7 +556,7 @@ router.get('/users/:id', apiLimiter, verifyToken, async (req, res) => {
         FROM cards c 
         JOIN columns col ON c.columnId = col.id 
         JOIN boards b ON col.boardId = b.id 
-        WHERE b.userId = ? 
+        WHERE b.user_id_creator = ? 
         AND c.updatedAt >= ? AND c.updatedAt <= ?
         AND LOWER(col.name) IN ('done', 'completed', 'finished')
       `, [targetUserId, startDateISO, endDateISO], (err, result) => {
@@ -558,7 +584,7 @@ router.get('/users/:id', apiLimiter, verifyToken, async (req, res) => {
         FROM cards c 
         JOIN columns col ON c.columnId = col.id 
         JOIN boards b ON col.boardId = b.id 
-        WHERE b.userId = ? 
+        WHERE b.user_id_creator = ? 
         AND c.createdAt >= ? AND c.createdAt <= ?
         GROUP BY strftime('%H', c.createdAt), strftime('%w', c.createdAt)
         ORDER BY activity_count DESC

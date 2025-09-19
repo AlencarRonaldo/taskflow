@@ -140,6 +140,26 @@ const GridView: React.FC = () => {
     const [gridApi, setGridApi] = useState<GridApi | null>(null);
     const [selectedRows, setSelectedRows] = useState<GridCard[]>([]);
     
+    const handleDeleteCard = async (cardId: number) => {
+        if (!window.confirm('Tem certeza que deseja excluir este card?')) {
+            return;
+        }
+        setLoading(true);
+        setError(null);
+        try {
+            await api.delete(`/cards/${cardId}`);
+            setGridData(prev => prev.filter(card => card.id !== cardId));
+            if (gridApi) {
+                gridApi.deselectAll();
+            }
+        } catch (err) {
+            console.error('Error deleting card:', err);
+            setError('Erro ao excluir card.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Filters
     const [filters, setFilters] = useState<GridFilters>({
         globalSearch: '',
@@ -165,10 +185,21 @@ const GridView: React.FC = () => {
     const columnDefs: ColDef[] = useMemo(() => [
         {
             headerName: '',
-            width: 50,
+            width: 70, // Increased width to accommodate the button
             pinned: 'left',
             lockPosition: true,
-            suppressMovable: true
+            cellRenderer: (params: any) => {
+                return (
+                    <Button 
+                        variant="danger" 
+                        size="sm" 
+                        onClick={() => handleDeleteCard(params.data.id)}
+                        title="Excluir Card"
+                    >
+                        🗑️
+                    </Button>
+                );
+            }
         },
         {
             headerName: 'ID',
