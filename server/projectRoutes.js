@@ -361,4 +361,22 @@ function createDefaultBoards(projectId, userId, callback) {
     });
 }
 
+// GET /api/projects/:projectId/cards - Get all cards for a project
+router.get('/:projectId/cards', checkProjectAccess, (req, res) => {
+    const projectId = req.params.projectId;
+
+    all(
+        `SELECT c.*, col.title as column_title, b.title as board_title
+         FROM cards c
+         JOIN columns col ON c.column_id = col.id
+         JOIN boards b ON col.board_id = b.id
+         WHERE b.project_id = ?`,
+        [projectId]
+    ).then(cards => {
+        res.json(cards || []);
+    }).catch(err => {
+        return res.status(500).json({ error: err.message });
+    });
+});
+
 module.exports = router;

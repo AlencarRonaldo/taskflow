@@ -28,7 +28,7 @@ interface Card {
 
 interface ProjectAnalytics {
     totalBoards: number;
-    totalCards: number; // This will now be the total cards from analytics endpoint
+    totalCards: number;
     boardsWithCards: number;
     emptyBoards: number;
     cardsCompleted: number;
@@ -38,7 +38,7 @@ interface ProjectAnalytics {
     boards: Board[];
     recentCards: Card[];
     completionRate: number;
-    totalCompletedProjects: number; // New field
+    totalCompletedProjects: number;
 }
 
 export const ProjectMetrics: React.FC<ProjectMetricsProps> = ({ projectId, projectName, projectColor }) => {
@@ -51,37 +51,15 @@ export const ProjectMetrics: React.FC<ProjectMetricsProps> = ({ projectId, proje
         try {
             setLoading(true);
             
-            // Fetch aggregated analytics data for the project
             const analyticsResponse = await api.get(`/v1/analytics/dashboard?project_id=${projectId}`);
             const analyticsData = analyticsResponse.data.totals;
 
-            // Fetch boards for the current project
             const boardsResponse = await api.get(`/boards?project_id=${projectId}`);
             const boards = Array.isArray(boardsResponse.data) ? boardsResponse.data : 
                           boardsResponse.data?.data && Array.isArray(boardsResponse.data.data) ? boardsResponse.data.data : [];
             
-            // Fetch all cards for the current project to calculate recentCards, criticalCards, cardsInProgress, cardsTodo
-            let allCards: Card[] = [];
-            for (const board of boards) {
-                try {
-                    const boardResponse = await api.get(`/boards/${board.id}`);
-                    const boardData = boardResponse.data.data;
-                    if (boardData.columns) {
-                        for (const column of boardData.columns) {
-                            if (column.cards) {
-                                const boardCards = column.cards.map((card: any) => ({
-                                    ...card,
-                                    board_title: board.title,
-                                    column_title: column.title
-                                }));
-                                allCards = [...allCards, ...boardCards];
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.log(`Erro ao buscar dados do board ${board.id}:`, error);
-                }
-            }
+            const cardsResponse = await api.get(`/projects/${projectId}/cards`);
+            const allCards: Card[] = cardsResponse.data;
 
             const recentCards = allCards
                 .sort((a, b) => new Date(b.due_date || '').getTime() - new Date(a.due_date || '').getTime())
@@ -92,7 +70,6 @@ export const ProjectMetrics: React.FC<ProjectMetricsProps> = ({ projectId, proje
             const boardsWithCards = boards.filter((board: Board) => board.cards_count > 0).length;
             const emptyBoards = boards.length - boardsWithCards;
 
-            // Recalculate cardsInProgress and cardsTodo using the allCards array
             const cardsCompleted = allCards.filter(card => {
                 if (card.status === 'completed') return true;
                 if (card.column_title) {
@@ -132,7 +109,7 @@ export const ProjectMetrics: React.FC<ProjectMetricsProps> = ({ projectId, proje
 
             const projectAnalytics: ProjectAnalytics = {
                 totalBoards: analyticsData.totalBoards,
-                totalCards: analyticsData.totalCards, // This is total cards from analytics endpoint
+                totalCards: analyticsData.totalCards,
                 boardsWithCards: boardsWithCards,
                 emptyBoards: emptyBoards,
                 cardsCompleted: cardsCompleted,
@@ -158,7 +135,6 @@ export const ProjectMetrics: React.FC<ProjectMetricsProps> = ({ projectId, proje
     useEffect(() => {
         if (projectId) {
             fetchProjectAnalytics();
-            // Refresh a cada 30 segundos
             const interval = setInterval(fetchProjectAnalytics, 30000);
             return () => clearInterval(interval);
         }
@@ -166,26 +142,6 @@ export const ProjectMetrics: React.FC<ProjectMetricsProps> = ({ projectId, proje
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('pt-BR');
-    };
-
-    const getPriorityColor = (priority: string) => {
-        switch (priority) {
-            case 'critical': return 'danger';
-            case 'high': return 'warning';
-            case 'medium': return 'info';
-            case 'low': return 'success';
-            default: return 'secondary';
-        }
-    };
-
-    const getPriorityLabel = (priority: string) => {
-        switch (priority) {
-            case 'critical': return 'CRÍTICO';
-            case 'high': return 'ALTO';
-            case 'medium': return 'MÉDIO';
-            case 'low': return 'BAIXO';
-            default: return priority.toUpperCase();
-        }
     };
 
     if (loading) {
@@ -228,7 +184,6 @@ export const ProjectMetrics: React.FC<ProjectMetricsProps> = ({ projectId, proje
                 <h4 className="mb-0">📊 Métricas do Projeto {projectName}</h4>
             </div>
             
-            {/* Cards de Overview */}
             <Row className="mb-4 g-3">
                 <Col xs={6} md={3}>
                     <Card className="h-100 border-primary">
@@ -269,7 +224,6 @@ export const ProjectMetrics: React.FC<ProjectMetricsProps> = ({ projectId, proje
                 </Col>
             </Row>
 
-            {/* Progresso dos Cards */}
             <Card className="mb-4">
                 <Card.Body>
                     <h5>🎯 Progresso das Tarefas</h5>
@@ -305,59 +259,6 @@ export const ProjectMetrics: React.FC<ProjectMetricsProps> = ({ projectId, proje
                     </div>
                 </Card.Body>
             </Card>
-
-            {/* Cards Urgentes */}
-            {showUrgentCards && analytics && (
-                <Card className="mb-4">
-                    <Card.Header className="d-flex justify-content-between align-items-center">
-                        <h5 className="mb-0">🔥 Cards Urgentes ({analytics.criticalCards})</h5>
-                        <Button 
-                            variant="outline-secondary" 
-                            size="sm" 
-                            onClick={() => setShowUrgentCards(false)}
-                        >
-                            ✕ Fechar
-                        </Button>
-                    </Card.Header>
-                    <Card.Body>
-                        {(() => {
-                            // Buscar todos os cards urgentes de todos os boards
-                            let urgentCards: any[] = [];
-                            analytics.boards.forEach(board => {
-                                // Simular busca de cards urgentes (em um cenário real, isso viria da API)
-                                // Por enquanto, vamos mostrar uma mensagem informativa
-                            });
-                            
-                            if (analytics.criticalCards === 0) {
-                                return (
-                                    <div className="text-center py-4">
-                                        <p className="text-muted mb-0">🎉 Nenhum card urgente encontrado!</p>
-                                        <small className="text-muted">Todos os cards estão com prioridade normal ou baixa.</small>
-                                    </div>
-                                );
-                            }
-                            
-                            return (
-                                <div className="text-center py-4">
-                                    <p className="text-warning mb-2">⚠️ {analytics.criticalCards} cards urgentes encontrados</p>
-                                    <small className="text-muted">
-                                        Cards com prioridade <strong>Crítica</strong> ou <strong>Alta</strong> em todos os boards do projeto.
-                                    </small>
-                                    <div className="mt-3">
-                                        <small className="text-muted">
-                                            💡 <strong>Dica:</strong> Acesse os boards individuais para ver e gerenciar os cards urgentes.
-                                        </small>
-                                    </div>
-                                </div>
-                            );
-                        })()}
-                    </Card.Body>
-                </Card>
-            )}
-
-            <Row>
-                
-            </Row>
         </div>
     );
 };

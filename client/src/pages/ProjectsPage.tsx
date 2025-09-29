@@ -163,7 +163,7 @@ const ProjectsPage: React.FC = () => {
     });
 
     return (
-        <Container fluid className="py-4">
+        <Container fluid className="py-4 projects-page">
             <Row className="mb-4">
                 <Col>
                     <h1 className="display-6">
@@ -214,116 +214,70 @@ const ProjectsPage: React.FC = () => {
                                 <Row>
                                     {categoryProjects.map((project) => (
                                         <Col key={project.id} xs={12} sm={6} md={4} lg={3} className="mb-4">
-                                            <Card 
-                                                className="h-100"
-                                                style={{ 
-                                                    cursor: 'pointer',
-                                                    borderTop: `3px solid ${project.color}`,
-                                                    height: '200px'
-                                                }}
-                                                onClick={() => handleProjectClick(project.id)}
-                                            >
-                                                <Card.Body className="p-2">
-                                                    <div className="d-flex justify-content-between align-items-start mb-2">
-                                                        <div className="d-flex align-items-center">
-                                                            <div 
-                                                                className="me-3 rounded-circle d-flex align-items-center justify-content-center"
-                                                                style={{ 
-                                                                    width: '40px', 
-                                                                    height: '40px', 
-                                                                    backgroundColor: project.color,
-                                                                    fontSize: '16px',
-                                                                    color: 'white',
-                                                                    fontWeight: 'bold'
-                                                                }}
-                                                            >
-                                                                {project.logo ? (
-                                                                    <img 
-                                                                        src={project.logo} 
-                                                                        alt={project.name} 
-                                                                        style={{ width: '24px', height: '24px' }}
-                                                                    />
-                                                                ) : (
-                                                                    project.name.charAt(0).toUpperCase()
-                                                                )}
-                                                            </div>
-                                                            <div>
-                                                                <h5 className="mb-1" style={{ fontSize: '14px' }}>
-                                                                    {project.name}
-                                                                </h5>
-                                                                <div className="d-flex align-items-center gap-2">
-                                                                    <Badge 
-                                                                        bg={project.is_completed === 1 ? 'success' : 'primary'} 
-                                                                        className="px-2 py-1"
-                                                                        style={{ fontSize: '10px' }}
-                                                                    >
-                                                                        {project.is_completed === 1 ? 'Concluído' : getProjectCategory(project)}
-                                                                    </Badge>
-                                                                    {getRoleBadge(project.role)}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    {project.description && (
-                                                        <p className="text-muted mb-2" style={{ fontSize: '11px' }}>
-                                                            {project.description.length > 60 
-                                                                ? project.description.substring(0, 60) + '...'
-                                                                : project.description}
-                                                        </p>
-                                                    )}
+    <Card 
+        className="project-card"
+        onClick={() => handleProjectClick(project.id)}
+        style={{ borderTop: `3px solid ${project.color}` }}
+    >
+        <Card.Body>
+            <div className="project-card-header">
+                <div className="project-logo" style={{ backgroundColor: project.color }}>
+                    {project.logo ? (
+                        <img src={project.logo} alt={project.name} style={{ width: '24px', height: '24px' }} />
+                    ) : (
+                        project.name.charAt(0).toUpperCase()
+                    )}
+                </div>
+                <div className="project-title-group">
+                    <h5 className="project-name">{project.name}</h5>
+                    <div className="project-badges">
+                        <Badge bg={project.is_completed === 1 ? 'success' : 'primary'}>
+                            {project.is_completed === 1 ? 'Concluído' : getProjectCategory(project)}
+                        </Badge>
+                        {getRoleBadge(project.role)}
+                    </div>
+                </div>
+            </div>
 
-                                                    <div className="d-flex justify-content-between mb-2">
-                                                        <small className="text-muted" style={{ fontSize: '10px' }}>
-                                                            <FaFolder className="me-1" />
-                                                            {project.boards_count} boards
-                                                        </small>
-                                                        <small className="text-muted" style={{ fontSize: '10px' }}>
-                                                            <FaUsers className="me-1" />
-                                                            {project.members_count} membros
-                                                        </small>
-                                                    </div>
+            {project.description && (
+                <p className="project-description">
+                    {project.description.length > 80 
+                        ? project.description.substring(0, 80) + '...'
+                        : project.description}
+                </p>
+            )}
 
-                                                    {project.next_appointment_title && project.next_appointment_due_date && (
-                                                        <div className={`p-2 rounded mb-2 ${isApproaching(project.next_appointment_due_date) ? 'bg-warning bg-opacity-10' : 'bg-light'}`}>
-                                                            <div className="d-flex align-items-center">
-                                                                <FaClock className="me-2 text-warning" style={{ fontSize: '10px' }} />
-                                                                <div>
-                                                                    <div className="fw-medium" style={{ fontSize: '10px' }}>
-                                                                        {project.next_appointment_title.length > 20 ? 
-                                                                            `${project.next_appointment_title.substring(0, 20)}...` : 
-                                                                            project.next_appointment_title
-                                                                        }
-                                                                    </div>
-                                                                    <small className="text-muted" style={{ fontSize: '9px' }}>
-                                                                        {formatDate(project.next_appointment_due_date)}
-                                                                    </small>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
+            <div className="project-stats">
+                <span><FaFolder className="me-1" /> {project.boards_count} boards</span>
+                <span><FaUsers className="me-1" /> {project.members_count} membros</span>
+            </div>
 
-                                                    <div className="mt-auto pt-2 border-top">
-                                                        <div className="d-flex justify-content-between align-items-center">
-                                                            <small className="text-muted" style={{ fontSize: '9px' }}>
-                                                                Criado {formatDate(project.created_at)}
-                                                            </small>
-                                                            {project.is_completed === 1 && project.completed_at ? (
-                                                                <small className="text-success fw-medium" style={{ fontSize: '9px' }}>
-                                                                    <FaCheckCircle className="me-1" />
-                                                                    {formatDate(project.completed_at)}
-                                                                </small>
-                                                            ) : project.last_activity_at ? (
-                                                                <small className="text-info fw-medium" style={{ fontSize: '9px' }}>
-                                                                    <FaClock className="me-1" />
-                                                                    {formatDateTime(project.last_activity_at)}
-                                                                </small>
-                                                            ) : null}
-                                                        </div>
-                                                    </div>
-                                                </Card.Body>
-                                            </Card>
-                                        </Col>
+            <div className="project-progress">
+                <div className="d-flex justify-content-between mb-1">
+                    <small>Progresso</small>
+                    <small>{project.completed_tasks_count || 0}/{project.tasks_count || 0}</small>
+                </div>
+                <div className="progress" style={{ height: '8px' }}>
+                    <div 
+                        className="progress-bar" 
+                        role="progressbar" 
+                        style={{ width: `${project.tasks_count ? (project.completed_tasks_count / project.tasks_count) * 100 : 0}%` }}
+                        aria-valuenow={project.tasks_count ? (project.completed_tasks_count / project.tasks_count) * 100 : 0}
+                        aria-valuemin="0" 
+                        aria-valuemax="100"
+                    ></div>
+                </div>
+            </div>
+
+            <div className="project-footer">
+                <small>Criado em {formatDate(project.created_at)}</small>
+                {project.last_activity_at && (
+                    <small><FaClock className="me-1" /> {formatDateTime(project.last_activity_at)}</small>
+                )}
+            </div>
+        </Card.Body>
+    </Card>
+</Col>
                                     ))}
                                 </Row>
                             </div>
